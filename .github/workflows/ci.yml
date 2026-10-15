@@ -9,6 +9,11 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: 코드 체크아웃
@@ -19,6 +24,8 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
+          registry-url: https://npm.pkg.github.com
+          scope: '@umc-product'
 
       - name: 의존성 설치
         run: npm ci
