@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설치
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          registry-url: https://npm.pkg.github.com
+          scope: '@umc-product'
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 포맷 검사
+        run: npm run format:check
+
+      - name: 린트 검사
+        run: npm run lint
+
+      - name: 타입 검사
+        run: npm run typecheck
+
+      - name: 테스트
+        run: npx vitest run --passWithNoTests
+
+      - name: 빌드
+        run: npx vite build
