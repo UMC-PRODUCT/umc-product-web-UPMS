@@ -1,24 +1,33 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
-import tailwindcss from '@tailwindcss/vite';
-import svgr from 'vite-plugin-svgr';
-import { imagetools } from 'vite-imagetools';
 import path from 'node:path';
+
+import tailwindcss from '@tailwindcss/vite';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+import { imagetools } from 'vite-imagetools';
+import svgr from 'vite-plugin-svgr';
 
 export default defineConfig({
   plugins: [
-    tanstackRouter({ target: 'react', autoCodeSplitting: true }), // react()보다 앞에
+    tanstackRouter({
+      target: 'react',
+      autoCodeSplitting: true,
+      routesDirectory: './src/routes',
+      generatedRouteTree: './src/routes/routeTree.gen.ts',
+      routeFileIgnorePattern: '\\.gen\\.ts$',
+    }),
     react(),
     tailwindcss(),
     svgr(),
     imagetools(),
   ],
-  resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
+  resolve: {
+    alias: { '@': path.resolve(__dirname, 'src') },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: './src/test/setup.ts',
+    setupFiles: './vitest.setup.ts',
   },
 });
