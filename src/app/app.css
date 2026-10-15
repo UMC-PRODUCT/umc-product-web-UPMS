@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+@import '@umc-product/react/styles.css';
+@import '@umc-product/design-tokens/tailwind.css';
 
 @theme {
   --color-primary-500: #3b82f6;

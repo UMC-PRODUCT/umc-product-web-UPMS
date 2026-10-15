@@ -23,7 +23,7 @@ export default defineConfig({
     imagetools(),
   ],
   resolve: {
-    alias: { '@': path.resolve(__dirname, 'src') },
+    alias: { '@': path.resolve(import.meta.dirname, 'src') },
   },
   test: {
     environment: 'jsdom',
