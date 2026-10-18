@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "defaultMode": "default",
+    "disableBypassPermissionsMode": "disable",
+    "allow": [
+      "mcp__figma__whoami",
+      "mcp__figma__get_screenshot",
+      "mcp__figma__get_design_context",
+      "mcp__figma__get_metadata",
+      "mcp__figma__get_variable_defs",
+      "mcp__figma__get_libraries",
+      "mcp__figma__search_design_system"
+    ],
+    "deny": [
+      "mcp__figma__use_figma",
+      "mcp__figma__generate_figma_design",
+      "mcp__figma__send_code_to_figma",
+      "mcp__figma__create_new_file",
+      "mcp__figma__generate_diagram",
+      "mcp__figma__generate_image",
+      "mcp__figma__upload_assets",
+      "mcp__figma__weave_upload_asset",
+      "mcp__figma__add_code_connect_map",
+      "mcp__figma__send_code_connect_mappings",
+      "mcp__figma__create_shader",
+      "mcp__figma__create_generative_plugin",
+      "mcp__figma__weave_run_tool",
+      "mcp__figma__weave_run_model",
+      "mcp__figma__weave_cancel_tool_run"
+    ]
+  }
+}
