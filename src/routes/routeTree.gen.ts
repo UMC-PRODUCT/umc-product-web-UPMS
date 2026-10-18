@@ -10,33 +10,203 @@
 
 import { Route as rootRouteImport } from './__root'
 import { Route as IndexRouteImport } from './index'
+import { Route as DemoDayRouteRouteImport } from './demo-day/route'
+import { Route as GuideRouteImport } from './guide'
+import { Route as ProjectsRouteImport } from './projects'
+import { Route as DemoDayIndexRouteImport } from './demo-day/index'
+import { Route as DemoDayProjectSettingsRouteRouteImport } from './demo-day/project-settings/route'
+import { Route as DemoDayProjectSettingsNoticeRouteImport } from './demo-day/project-settings/notice'
+import { Route as DemoDayProjectSettingsProjectsRouteImport } from './demo-day/project-settings/projects'
+import { Route as DemoDayProjectSettingsQuotaRouteImport } from './demo-day/project-settings/quota'
+import { Route as DemoDayProjectSettingsRoundsRouteImport } from './demo-day/project-settings/rounds'
+import { Route as DemoDayTeamMatchingApplicationsRouteImport } from './demo-day/team-matching/applications'
+import { Route as DemoDayTeamMatchingNoticeRouteImport } from './demo-day/team-matching/notice'
+import { Route as DemoDayTeamMatchingProjectsRouteImport } from './demo-day/team-matching/projects'
+import { Route as DemoDayTeamMatchingStatusRouteImport } from './demo-day/team-matching/status'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DemoDayRouteRoute = DemoDayRouteRouteImport.update({
+  id: '/demo-day',
+  path: '/demo-day',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuideRoute = GuideRouteImport.update({
+  id: '/guide',
+  path: '/guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoDayIndexRoute = DemoDayIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DemoDayRouteRoute,
+} as any)
+const DemoDayProjectSettingsRouteRoute =
+  DemoDayProjectSettingsRouteRouteImport.update({
+    id: '/project-settings',
+    path: '/project-settings',
+    getParentRoute: () => DemoDayRouteRoute,
+  } as any)
+const DemoDayProjectSettingsNoticeRoute =
+  DemoDayProjectSettingsNoticeRouteImport.update({
+    id: '/notice',
+    path: '/notice',
+    getParentRoute: () => DemoDayProjectSettingsRouteRoute,
+  } as any)
+const DemoDayProjectSettingsProjectsRoute =
+  DemoDayProjectSettingsProjectsRouteImport.update({
+    id: '/projects',
+    path: '/projects',
+    getParentRoute: () => DemoDayProjectSettingsRouteRoute,
+  } as any)
+const DemoDayProjectSettingsQuotaRoute =
+  DemoDayProjectSettingsQuotaRouteImport.update({
+    id: '/quota',
+    path: '/quota',
+    getParentRoute: () => DemoDayProjectSettingsRouteRoute,
+  } as any)
+const DemoDayProjectSettingsRoundsRoute =
+  DemoDayProjectSettingsRoundsRouteImport.update({
+    id: '/rounds',
+    path: '/rounds',
+    getParentRoute: () => DemoDayProjectSettingsRouteRoute,
+  } as any)
+const DemoDayTeamMatchingApplicationsRoute =
+  DemoDayTeamMatchingApplicationsRouteImport.update({
+    id: '/team-matching/applications',
+    path: '/team-matching/applications',
+    getParentRoute: () => DemoDayRouteRoute,
+  } as any)
+const DemoDayTeamMatchingNoticeRoute =
+  DemoDayTeamMatchingNoticeRouteImport.update({
+    id: '/team-matching/notice',
+    path: '/team-matching/notice',
+    getParentRoute: () => DemoDayRouteRoute,
+  } as any)
+const DemoDayTeamMatchingProjectsRoute =
+  DemoDayTeamMatchingProjectsRouteImport.update({
+    id: '/team-matching/projects',
+    path: '/team-matching/projects',
+    getParentRoute: () => DemoDayRouteRoute,
+  } as any)
+const DemoDayTeamMatchingStatusRoute =
+  DemoDayTeamMatchingStatusRouteImport.update({
+    id: '/team-matching/status',
+    path: '/team-matching/status',
+    getParentRoute: () => DemoDayRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/demo-day': typeof DemoDayRouteRouteWithChildren
+  '/guide': typeof GuideRoute
+  '/projects': typeof ProjectsRoute
+  '/demo-day/project-settings': typeof DemoDayProjectSettingsRouteRouteWithChildren
+  '/demo-day/': typeof DemoDayIndexRoute
+  '/demo-day/project-settings/notice': typeof DemoDayProjectSettingsNoticeRoute
+  '/demo-day/project-settings/projects': typeof DemoDayProjectSettingsProjectsRoute
+  '/demo-day/project-settings/quota': typeof DemoDayProjectSettingsQuotaRoute
+  '/demo-day/project-settings/rounds': typeof DemoDayProjectSettingsRoundsRoute
+  '/demo-day/team-matching/applications': typeof DemoDayTeamMatchingApplicationsRoute
+  '/demo-day/team-matching/notice': typeof DemoDayTeamMatchingNoticeRoute
+  '/demo-day/team-matching/projects': typeof DemoDayTeamMatchingProjectsRoute
+  '/demo-day/team-matching/status': typeof DemoDayTeamMatchingStatusRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/guide': typeof GuideRoute
+  '/projects': typeof ProjectsRoute
+  '/demo-day/project-settings': typeof DemoDayProjectSettingsRouteRouteWithChildren
+  '/demo-day': typeof DemoDayIndexRoute
+  '/demo-day/project-settings/notice': typeof DemoDayProjectSettingsNoticeRoute
+  '/demo-day/project-settings/projects': typeof DemoDayProjectSettingsProjectsRoute
+  '/demo-day/project-settings/quota': typeof DemoDayProjectSettingsQuotaRoute
+  '/demo-day/project-settings/rounds': typeof DemoDayProjectSettingsRoundsRoute
+  '/demo-day/team-matching/applications': typeof DemoDayTeamMatchingApplicationsRoute
+  '/demo-day/team-matching/notice': typeof DemoDayTeamMatchingNoticeRoute
+  '/demo-day/team-matching/projects': typeof DemoDayTeamMatchingProjectsRoute
+  '/demo-day/team-matching/status': typeof DemoDayTeamMatchingStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/demo-day': typeof DemoDayRouteRouteWithChildren
+  '/guide': typeof GuideRoute
+  '/projects': typeof ProjectsRoute
+  '/demo-day/project-settings': typeof DemoDayProjectSettingsRouteRouteWithChildren
+  '/demo-day/': typeof DemoDayIndexRoute
+  '/demo-day/project-settings/notice': typeof DemoDayProjectSettingsNoticeRoute
+  '/demo-day/project-settings/projects': typeof DemoDayProjectSettingsProjectsRoute
+  '/demo-day/project-settings/quota': typeof DemoDayProjectSettingsQuotaRoute
+  '/demo-day/project-settings/rounds': typeof DemoDayProjectSettingsRoundsRoute
+  '/demo-day/team-matching/applications': typeof DemoDayTeamMatchingApplicationsRoute
+  '/demo-day/team-matching/notice': typeof DemoDayTeamMatchingNoticeRoute
+  '/demo-day/team-matching/projects': typeof DemoDayTeamMatchingProjectsRoute
+  '/demo-day/team-matching/status': typeof DemoDayTeamMatchingStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/demo-day'
+    | '/guide'
+    | '/projects'
+    | '/demo-day/project-settings'
+    | '/demo-day/'
+    | '/demo-day/project-settings/notice'
+    | '/demo-day/project-settings/projects'
+    | '/demo-day/project-settings/quota'
+    | '/demo-day/project-settings/rounds'
+    | '/demo-day/team-matching/applications'
+    | '/demo-day/team-matching/notice'
+    | '/demo-day/team-matching/projects'
+    | '/demo-day/team-matching/status'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/guide'
+    | '/projects'
+    | '/demo-day/project-settings'
+    | '/demo-day'
+    | '/demo-day/project-settings/notice'
+    | '/demo-day/project-settings/projects'
+    | '/demo-day/project-settings/quota'
+    | '/demo-day/project-settings/rounds'
+    | '/demo-day/team-matching/applications'
+    | '/demo-day/team-matching/notice'
+    | '/demo-day/team-matching/projects'
+    | '/demo-day/team-matching/status'
+  id:
+    | '__root__'
+    | '/'
+    | '/demo-day'
+    | '/guide'
+    | '/projects'
+    | '/demo-day/project-settings'
+    | '/demo-day/'
+    | '/demo-day/project-settings/notice'
+    | '/demo-day/project-settings/projects'
+    | '/demo-day/project-settings/quota'
+    | '/demo-day/project-settings/rounds'
+    | '/demo-day/team-matching/applications'
+    | '/demo-day/team-matching/notice'
+    | '/demo-day/team-matching/projects'
+    | '/demo-day/team-matching/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DemoDayRouteRoute: typeof DemoDayRouteRouteWithChildren
+  GuideRoute: typeof GuideRoute
+  ProjectsRoute: typeof ProjectsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +218,148 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/demo-day': {
+      id: '/demo-day'
+      path: '/demo-day'
+      fullPath: '/demo-day'
+      preLoaderRoute: typeof DemoDayRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guide': {
+      id: '/guide'
+      path: '/guide'
+      fullPath: '/guide'
+      preLoaderRoute: typeof GuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo-day/': {
+      id: '/demo-day/'
+      path: '/'
+      fullPath: '/demo-day/'
+      preLoaderRoute: typeof DemoDayIndexRouteImport
+      parentRoute: typeof DemoDayRouteRoute
+    }
+    '/demo-day/project-settings': {
+      id: '/demo-day/project-settings'
+      path: '/project-settings'
+      fullPath: '/demo-day/project-settings'
+      preLoaderRoute: typeof DemoDayProjectSettingsRouteRouteImport
+      parentRoute: typeof DemoDayRouteRoute
+    }
+    '/demo-day/project-settings/notice': {
+      id: '/demo-day/project-settings/notice'
+      path: '/notice'
+      fullPath: '/demo-day/project-settings/notice'
+      preLoaderRoute: typeof DemoDayProjectSettingsNoticeRouteImport
+      parentRoute: typeof DemoDayProjectSettingsRouteRoute
+    }
+    '/demo-day/project-settings/projects': {
+      id: '/demo-day/project-settings/projects'
+      path: '/projects'
+      fullPath: '/demo-day/project-settings/projects'
+      preLoaderRoute: typeof DemoDayProjectSettingsProjectsRouteImport
+      parentRoute: typeof DemoDayProjectSettingsRouteRoute
+    }
+    '/demo-day/project-settings/quota': {
+      id: '/demo-day/project-settings/quota'
+      path: '/quota'
+      fullPath: '/demo-day/project-settings/quota'
+      preLoaderRoute: typeof DemoDayProjectSettingsQuotaRouteImport
+      parentRoute: typeof DemoDayProjectSettingsRouteRoute
+    }
+    '/demo-day/project-settings/rounds': {
+      id: '/demo-day/project-settings/rounds'
+      path: '/rounds'
+      fullPath: '/demo-day/project-settings/rounds'
+      preLoaderRoute: typeof DemoDayProjectSettingsRoundsRouteImport
+      parentRoute: typeof DemoDayProjectSettingsRouteRoute
+    }
+    '/demo-day/team-matching/applications': {
+      id: '/demo-day/team-matching/applications'
+      path: '/team-matching/applications'
+      fullPath: '/demo-day/team-matching/applications'
+      preLoaderRoute: typeof DemoDayTeamMatchingApplicationsRouteImport
+      parentRoute: typeof DemoDayRouteRoute
+    }
+    '/demo-day/team-matching/notice': {
+      id: '/demo-day/team-matching/notice'
+      path: '/team-matching/notice'
+      fullPath: '/demo-day/team-matching/notice'
+      preLoaderRoute: typeof DemoDayTeamMatchingNoticeRouteImport
+      parentRoute: typeof DemoDayRouteRoute
+    }
+    '/demo-day/team-matching/projects': {
+      id: '/demo-day/team-matching/projects'
+      path: '/team-matching/projects'
+      fullPath: '/demo-day/team-matching/projects'
+      preLoaderRoute: typeof DemoDayTeamMatchingProjectsRouteImport
+      parentRoute: typeof DemoDayRouteRoute
+    }
+    '/demo-day/team-matching/status': {
+      id: '/demo-day/team-matching/status'
+      path: '/team-matching/status'
+      fullPath: '/demo-day/team-matching/status'
+      preLoaderRoute: typeof DemoDayTeamMatchingStatusRouteImport
+      parentRoute: typeof DemoDayRouteRoute
+    }
   }
 }
 
+interface DemoDayProjectSettingsRouteRouteChildren {
+  DemoDayProjectSettingsNoticeRoute: typeof DemoDayProjectSettingsNoticeRoute
+  DemoDayProjectSettingsProjectsRoute: typeof DemoDayProjectSettingsProjectsRoute
+  DemoDayProjectSettingsQuotaRoute: typeof DemoDayProjectSettingsQuotaRoute
+  DemoDayProjectSettingsRoundsRoute: typeof DemoDayProjectSettingsRoundsRoute
+}
+
+const DemoDayProjectSettingsRouteRouteChildren: DemoDayProjectSettingsRouteRouteChildren =
+  {
+    DemoDayProjectSettingsNoticeRoute: DemoDayProjectSettingsNoticeRoute,
+    DemoDayProjectSettingsProjectsRoute: DemoDayProjectSettingsProjectsRoute,
+    DemoDayProjectSettingsQuotaRoute: DemoDayProjectSettingsQuotaRoute,
+    DemoDayProjectSettingsRoundsRoute: DemoDayProjectSettingsRoundsRoute,
+  }
+
+const DemoDayProjectSettingsRouteRouteWithChildren =
+  DemoDayProjectSettingsRouteRoute._addFileChildren(
+    DemoDayProjectSettingsRouteRouteChildren,
+  )
+
+interface DemoDayRouteRouteChildren {
+  DemoDayProjectSettingsRouteRoute: typeof DemoDayProjectSettingsRouteRouteWithChildren
+  DemoDayIndexRoute: typeof DemoDayIndexRoute
+  DemoDayTeamMatchingApplicationsRoute: typeof DemoDayTeamMatchingApplicationsRoute
+  DemoDayTeamMatchingNoticeRoute: typeof DemoDayTeamMatchingNoticeRoute
+  DemoDayTeamMatchingProjectsRoute: typeof DemoDayTeamMatchingProjectsRoute
+  DemoDayTeamMatchingStatusRoute: typeof DemoDayTeamMatchingStatusRoute
+}
+
+const DemoDayRouteRouteChildren: DemoDayRouteRouteChildren = {
+  DemoDayProjectSettingsRouteRoute:
+    DemoDayProjectSettingsRouteRouteWithChildren,
+  DemoDayIndexRoute: DemoDayIndexRoute,
+  DemoDayTeamMatchingApplicationsRoute: DemoDayTeamMatchingApplicationsRoute,
+  DemoDayTeamMatchingNoticeRoute: DemoDayTeamMatchingNoticeRoute,
+  DemoDayTeamMatchingProjectsRoute: DemoDayTeamMatchingProjectsRoute,
+  DemoDayTeamMatchingStatusRoute: DemoDayTeamMatchingStatusRoute,
+}
+
+const DemoDayRouteRouteWithChildren = DemoDayRouteRoute._addFileChildren(
+  DemoDayRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DemoDayRouteRoute: DemoDayRouteRouteWithChildren,
+  GuideRoute: GuideRoute,
+  ProjectsRoute: ProjectsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
