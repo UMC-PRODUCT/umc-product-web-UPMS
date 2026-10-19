@@ -14,9 +14,13 @@ export type ChallengerType = 'PM' | 'GENERAL';
 export type Session = {
   role: Role;
   challengerType: ChallengerType | null;
+  chapterId: string | null; // 소속 지부
 };
 
 export type View = 'ADMIN' | 'PM_CHALLENGER' | 'CHALLENGER';
 
 // 사이드바 '프로젝트 설정' 메뉴 접근 수준
 export type ProjectSettingsAccess = 'FULL' | 'BASIC' | 'NONE';
+
+// 지원 현황에서 조회할 수 있는 지부 범위
+export type ChapterScope = 'ALL' | 'OWN';
