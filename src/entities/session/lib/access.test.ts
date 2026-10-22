@@ -1,5 +1,43 @@
-import type { Role } from '../model/types';
-import { getProjectSettingsAccess, getViewOptions } from './access';
+import type { Role, View } from '../model/types';
+import {
+  getApplicationsView,
+  getChapterScope,
+  getProjectSettingsAccess,
+  getViewOptions,
+} from './access';
+
+describe('getChapterScope', () => {
+  it.each<[Role, 'ALL' | 'OWN']>([
+    ['SUPER_ADMIN', 'ALL'],
+    ['HQ_LEAD', 'ALL'],
+    ['HQ_ADMIN', 'ALL'],
+    ['CHAPTER_ADMIN', 'OWN'],
+    ['SCHOOL_ADMIN', 'OWN'],
+    ['SCHOOL_STAFF', 'OWN'],
+  ])('%s의 지부 조회 범위는 %s', (role, expected) => {
+    expect(getChapterScope(role)).toBe(expected);
+  });
+});
+
+describe('getApplicationsView', () => {
+  it.each<[Role, View]>([
+    ['SUPER_ADMIN', 'ADMIN'],
+    ['HQ_LEAD', 'ADMIN'],
+    ['HQ_ADMIN', 'ADMIN'],
+    ['CHAPTER_ADMIN', 'ADMIN'],
+    ['SCHOOL_ADMIN', 'ADMIN'],
+    ['SCHOOL_STAFF', 'ADMIN'],
+    ['CHALLENGER_PM', 'PM_CHALLENGER'],
+    ['CHALLENGER', 'CHALLENGER'],
+  ])('Admin View에서 %s는 %s 화면을 본다', (role, expected) => {
+    expect(getApplicationsView(role, 'ADMIN')).toBe(expected);
+  });
+
+  it('운영진도 챌린저 뷰로 전환하면 해당 챌린저 화면을 본다', () => {
+    expect(getApplicationsView('HQ_ADMIN', 'PM_CHALLENGER')).toBe('PM_CHALLENGER');
+    expect(getApplicationsView('SUPER_ADMIN', 'CHALLENGER')).toBe('CHALLENGER');
+  });
+});
 
 describe('getProjectSettingsAccess', () => {
   it.each<[Role, 'FULL' | 'BASIC' | 'NONE']>([
