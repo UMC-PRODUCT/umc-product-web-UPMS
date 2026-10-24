@@ -65,6 +65,7 @@ const Sidebar = () => {
 
   return (
     <SideNavigation
+      className="w-(--umc-layout-sidebar-width) shrink-0"
       title="11th Demo day"
       items={items}
       currentPath={pathname}
