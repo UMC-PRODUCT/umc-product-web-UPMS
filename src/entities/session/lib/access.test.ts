@@ -1,5 +1,6 @@
 import type { Role, View } from '../model/types';
 import {
+  canEditApplicantStatus,
   getApplicationsView,
   getChapterScope,
   getProjectSettingsAccess,
@@ -36,6 +37,32 @@ describe('getApplicationsView', () => {
   it('운영진도 챌린저 뷰로 전환하면 해당 챌린저 화면을 본다', () => {
     expect(getApplicationsView('HQ_ADMIN', 'PM_CHALLENGER')).toBe('PM_CHALLENGER');
     expect(getApplicationsView('SUPER_ADMIN', 'CHALLENGER')).toBe('CHALLENGER');
+  });
+});
+
+describe('canEditApplicantStatus', () => {
+  it.each<[Role, boolean]>([
+    ['SUPER_ADMIN', true],
+    ['HQ_LEAD', true],
+    ['HQ_ADMIN', false],
+    ['SCHOOL_ADMIN', false],
+    ['SCHOOL_STAFF', false],
+  ])('Admin View에서 %s의 배정 상태 변경 가능 여부는 %s', (role, expected) => {
+    expect(canEditApplicantStatus({ role, chapterId: 'axolotl' }, 'ADMIN', 'axolotl')).toBe(
+      expected,
+    );
+  });
+
+  it('지부장은 본인 지부 프로젝트만 바꿀 수 있다', () => {
+    const session = { role: 'CHAPTER_ADMIN' as const, chapterId: 'axolotl' };
+    expect(canEditApplicantStatus(session, 'ADMIN', 'axolotl')).toBe(true);
+    expect(canEditApplicantStatus(session, 'ADMIN', 'quokka')).toBe(false);
+  });
+
+  it('PM 뷰는 본인 프로젝트만 보이므로 바꿀 수 있고, 챌린저 뷰는 바꿀 수 없다', () => {
+    const session = { role: 'CHALLENGER_PM' as const, chapterId: 'axolotl' };
+    expect(canEditApplicantStatus(session, 'PM_CHALLENGER', null)).toBe(true);
+    expect(canEditApplicantStatus(session, 'CHALLENGER', null)).toBe(false);
   });
 });
 

@@ -1,4 +1,5 @@
 export {
+  canEditApplicantStatus,
   getApplicationsView,
   getChapterScope,
   getProjectSettingsAccess,
@@ -8,6 +9,7 @@ export {
 export {
   getProjectSettingsAccessSnapshot,
   useApplicationsView,
+  useCanEditApplicantStatus,
   useProjectSettingsAccess,
   useSessionStore,
 } from './model/sessionStore';

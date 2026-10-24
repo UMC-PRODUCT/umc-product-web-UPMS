@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 
-import { getApplicationsView, getProjectSettingsAccess } from '../lib/access';
+import {
+  canEditApplicantStatus,
+  getApplicationsView,
+  getProjectSettingsAccess,
+} from '../lib/access';
 import type { Session, View } from './types';
 
 // TODO: 사용자 정보 API가 나오면 실제 데이터로 교체. 지금은 권한별 화면 확인용 mock.
@@ -25,6 +29,16 @@ export const useProjectSettingsAccess = () =>
 
 export const useApplicationsView = () =>
   useSessionStore((state) => getApplicationsView(state.session.role, state.view));
+
+// 지원자 배정 상태를 바꿀 수 있는 역할인지 (매칭 기간은 따로 확인)
+export const useCanEditApplicantStatus = (projectChapterId: string | null) =>
+  useSessionStore((state) =>
+    canEditApplicantStatus(
+      state.session,
+      getApplicationsView(state.session.role, state.view),
+      projectChapterId,
+    ),
+  );
 
 // 라우트 beforeLoad처럼 React 밖에서 권한을 확인할 때 사용
 export const getProjectSettingsAccessSnapshot = () => {
