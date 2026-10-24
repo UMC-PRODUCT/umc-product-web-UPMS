@@ -2,6 +2,11 @@
 @import '@umc-product/react/styles.css';
 @import '@umc-product/design-tokens/tailwind.css';
 
+/* 피그마: 토스트는 화면 하단에서 96px 위에 중앙 배치 (DS 기본값 40px) */
+.umc-toast-viewport {
+  --umc-toast-viewport-offset-bottom: 96px;
+}
+
 @theme {
   --color-primary-500: #3b82f6;
   --font-sans: 'Pretendard', system-ui, sans-serif;

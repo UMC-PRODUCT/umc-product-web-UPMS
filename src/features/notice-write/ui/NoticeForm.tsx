@@ -11,6 +11,7 @@ import {
 } from '@/entities/notice';
 import { cn } from '@/shared/lib/cn';
 import { FIGMA_BUTTON_MD } from '@/shared/ui/buttonStyle';
+import { FIGMA_DIALOG } from '@/shared/ui/dialogStyle';
 
 // 제출 중(로딩) → 완료(딤드 뒤에 깔리는 비활성 버튼) 순서로 바뀐다
 type SubmitStatus = 'idle' | 'submitting' | 'done';
@@ -69,12 +70,13 @@ const NoticeForm = ({ chapterId, notice, onBack, onComplete }: NoticeFormProps) 
           size="sm"
           leadingIcon={<ChevronLeftIcon size={16} />}
           onClick={onBack}
-          className="self-start"
+          // 피그마: 높이 34px, 좌 8px·우 12px 여백, 아이콘과 글자 간격 4px
+          className="h-[34px] min-w-16 gap-1 self-start pr-3 pl-2"
         >
           목록으로
         </TextButton>
 
-        <div className="flex w-[900px] max-w-full flex-col gap-4">
+        <div className="flex w-full flex-col gap-4">
           <div className="flex items-center gap-2.5 px-4 py-1">
             <input
               value={title}
@@ -87,6 +89,8 @@ const NoticeForm = ({ chapterId, notice, onBack, onComplete }: NoticeFormProps) 
               <Checkbox
                 color="brand"
                 labelPlacement="end"
+                // 피그마: 체크 전에는 회색 테두리, 체크하면 브랜드 색
+                className="[--umc-checkbox-border:var(--umc-color-border-neutral-strong-400)]"
                 checked={required}
                 onCheckedChange={setRequired}
               >
@@ -94,11 +98,13 @@ const NoticeForm = ({ chapterId, notice, onBack, onComplete }: NoticeFormProps) 
               </Checkbox>
               <Button
                 type="submit"
+                // 피그마: 수정 화면의 버튼만 연한 배경(weak)이고 나머지는 같다
+                variant={isEdit ? 'weak' : 'fill'}
                 disabled={!canSubmit && status !== 'submitting'}
                 isLoading={status === 'submitting'}
                 className={cn(FIGMA_BUTTON_MD, 'min-w-[76px]')}
               >
-                {status === 'done' ? '완료' : `${actionLabel}하기`}
+                {status === 'done' ? `${actionLabel} 완료` : `${actionLabel}하기`}
               </Button>
             </div>
           </div>
@@ -112,7 +118,7 @@ const NoticeForm = ({ chapterId, notice, onBack, onComplete }: NoticeFormProps) 
               maxLength={NOTICE_CONTENT_MAX_LENGTH}
               className="field-sizing-content min-h-[360px] w-full resize-none bg-transparent text-body-1-regular leading-[1.6] text-teal-grey-900 outline-none placeholder:text-teal-grey-400"
             />
-            <p className="flex items-center gap-0.5 text-body-2-regular text-teal-grey-400">
+            <p className="flex h-[21px] items-center gap-0.5 text-body-2-regular text-teal-grey-400">
               <span className="text-body-2-medium">{content.length}</span>
               <span>/</span>
               <span className="text-body-2-medium">{NOTICE_CONTENT_MAX_LENGTH}</span>
@@ -124,9 +130,10 @@ const NoticeForm = ({ chapterId, notice, onBack, onComplete }: NoticeFormProps) 
       <Dialog
         open={status === 'done'}
         color="primary"
+        className={FIGMA_DIALOG}
         icon={<CheckIcon />}
         title={`${actionLabel} 완료`}
-        description={`공지가 ${isEdit ? '수정' : '등록'}되었습니다.`}
+        description={isEdit ? '공지 수정이 완료되었습니다.' : '공지가 등록되었습니다.'}
         confirmLabel="보러가기"
         onConfirm={onComplete}
       />

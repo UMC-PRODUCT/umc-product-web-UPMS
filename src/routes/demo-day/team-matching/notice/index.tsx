@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { AddIcon } from '@umc-product/icons';
-import { Button, Dialog, PageHeader } from '@umc-product/react';
+import { AddIcon, CheckCircleIcon, WarningTriangleIcon } from '@umc-product/icons';
+import { Button, Dialog, PageHeader, useToast } from '@umc-product/react';
 import { useState } from 'react';
 
 import { type Notice, NoticeCard, useNotices, useNoticeStore } from '@/entities/notice';
@@ -9,6 +9,7 @@ import { ChapterSelectHeader, useResolvedChapterId } from '@/features/chapter-se
 import { NoticeList } from '@/features/notice-list';
 import { cn } from '@/shared/lib/cn';
 import { FIGMA_BUTTON_MD } from '@/shared/ui/buttonStyle';
+import { FIGMA_DIALOG } from '@/shared/ui/dialogStyle';
 import { TeamMatchingHeader } from '@/widgets/teamMatchingHeader';
 
 type NoticeSearch = { chapter?: string };
@@ -18,6 +19,7 @@ const BREADCRUMBS = [{ label: '팀 매칭' }, { label: '공지' }];
 const NoticePage = () => {
   const { chapter } = Route.useSearch();
   const navigate = Route.useNavigate();
+  const toast = useToast();
   const chapterId = useResolvedChapterId(chapter);
   const notices = useNotices(chapterId);
   const removeNotice = useNoticeStore((state) => state.removeNotice);
@@ -99,18 +101,30 @@ const NoticePage = () => {
         />
       </NoticeCard>
 
-      {/* 삭제 확인 모달은 시안이 없어 디자인 시스템 기본 Dialog를 사용 */}
       <Dialog
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        color="error"
-        title="공지를 삭제할까요?"
-        description="삭제한 공지는 되돌릴 수 없습니다."
-        confirmLabel="삭제"
-        cancelLabel="취소"
+        color="primary"
+        className={FIGMA_DIALOG}
+        icon={<WarningTriangleIcon weight="fill" />}
+        title="공지 삭제"
+        description={
+          <>
+            삭제한 공지는 되돌릴 수 없습니다.
+            <br />
+            삭제하시겠습니까?
+          </>
+        }
+        confirmLabel="삭제하기"
+        cancelLabel="돌아가기"
         onConfirm={() => {
           if (deleteTarget) removeNotice(chapterId, deleteTarget.id);
           setDeleteTarget(null);
+          toast.show({
+            message: '공지가 삭제되었습니다.',
+            color: 'primary',
+            icon: <CheckCircleIcon weight="fill" />,
+          });
         }}
       />
     </div>
