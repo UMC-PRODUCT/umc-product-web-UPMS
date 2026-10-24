@@ -1,4 +1,5 @@
 export {
+  canManageNotice,
   getApplicationsView,
   getChapterScope,
   getProjectSettingsAccess,
@@ -6,8 +7,10 @@ export {
   type ViewOption,
 } from './lib/access';
 export {
+  getCanManageNoticeSnapshot,
   getProjectSettingsAccessSnapshot,
   useApplicationsView,
+  useCanManageNotice,
   useProjectSettingsAccess,
   useSessionStore,
 } from './model/sessionStore';

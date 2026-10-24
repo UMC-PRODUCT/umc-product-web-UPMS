@@ -1,5 +1,6 @@
 import type { Role, View } from '../model/types';
 import {
+  canManageNotice,
   getApplicationsView,
   getChapterScope,
   getProjectSettingsAccess,
@@ -80,4 +81,26 @@ describe('getViewOptions', () => {
     expect(getViewOptions({ role: 'HQ_LEAD', challengerType: 'PM' })).toEqual([]);
     expect(getViewOptions({ role: 'CHALLENGER', challengerType: 'GENERAL' })).toEqual([]);
   });
+});
+
+describe('canManageNotice', () => {
+  it.each<Role>(['SUPER_ADMIN', 'HQ_LEAD', 'HQ_ADMIN'])(
+    '%s는 모든 지부의 공지를 관리한다',
+    (role) => {
+      expect(canManageNotice(role, 'axolotl', 'otter')).toBe(true);
+      expect(canManageNotice(role, null, 'otter')).toBe(true);
+    },
+  );
+
+  it('지부장은 본인 지부의 공지만 관리한다', () => {
+    expect(canManageNotice('CHAPTER_ADMIN', 'axolotl', 'axolotl')).toBe(true);
+    expect(canManageNotice('CHAPTER_ADMIN', 'axolotl', 'otter')).toBe(false);
+  });
+
+  it.each<Role>(['SCHOOL_ADMIN', 'SCHOOL_STAFF', 'CHALLENGER_PM', 'CHALLENGER'])(
+    '%s는 공지를 관리할 수 없다',
+    (role) => {
+      expect(canManageNotice(role, 'axolotl', 'axolotl')).toBe(false);
+    },
+  );
 });
