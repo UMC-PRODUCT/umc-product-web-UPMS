@@ -1,7 +1,9 @@
 export {
   canEditApplicantStatus,
+  canManageMatching,
   getApplicationsView,
   getChapterScope,
+  getMatchingScheduleAccess,
   getProjectSettingsAccess,
   getViewOptions,
   type ViewOption,
