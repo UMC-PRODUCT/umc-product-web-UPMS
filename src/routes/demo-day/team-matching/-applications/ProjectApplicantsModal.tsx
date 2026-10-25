@@ -1,5 +1,5 @@
 import { CloseIcon } from '@umc-product/icons';
-import { Dimmed, type PartTagPart } from '@umc-product/react';
+import { Dimmed, IconButton, type PartTagPart } from '@umc-product/react';
 import { Dialog } from 'radix-ui';
 import { useState } from 'react';
 
@@ -84,11 +84,15 @@ const ProjectApplicantsModal = ({
                     <p className="flex-1 text-body-3-semibold text-teal-600">{chapterName}</p>
                     <div className="flex items-center gap-2.5">
                       <AssignmentInfoTooltip />
-                      <Dialog.Close
-                        aria-label="닫기"
-                        className="flex size-[26px] items-center justify-center rounded-lg text-teal-grey-800"
-                      >
-                        <CloseIcon size={24} />
+                      <Dialog.Close asChild>
+                        {/* 디자인 시스템 PanelCloseButton과 같은 흰색 Icon Button (피그마 26px) */}
+                        <IconButton
+                          variant="weak"
+                          color="white"
+                          size="md"
+                          icon={<CloseIcon size={24} />}
+                          aria-label="닫기"
+                        />
                       </Dialog.Close>
                     </div>
                   </div>

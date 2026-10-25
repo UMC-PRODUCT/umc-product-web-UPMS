@@ -1,4 +1,4 @@
-import { PageHeader, Pagination } from '@umc-product/react';
+import { PageHeader, Pagination, SectionHeader } from '@umc-product/react';
 import { useState } from 'react';
 
 import { useCanEditApplicantStatus, useSessionStore } from '@/entities/session';
@@ -18,11 +18,11 @@ import {
   TotalApplicantsCard,
 } from '@/features/application-stats';
 import { ChapterSelectHeader, useVisibleChapters } from '@/features/chapter-select';
-import { SectionTitle } from '@/shared/ui/SectionTitle';
 import { FilterDropdownGroup } from '@/widgets/filterDropdownGroup';
 import { SearchBar } from '@/widgets/searchBar';
 
-import { getBreadcrumbs, UPDATED_AT_CAPTION } from './constants';
+import { getBreadcrumbs } from '../-shared/constants';
+import UpdatedAtCaption from '../-shared/UpdatedAtCaption';
 import ProjectApplicantsModal from './ProjectApplicantsModal';
 
 // 프로젝트 10개씩 페이지 구분 (PM 뷰 지원자 기준과 같게)
@@ -84,9 +84,9 @@ const AdminApplications = () => {
 
         <div className="flex w-full flex-col gap-16">
           <section className="flex w-full flex-col gap-4">
-            <SectionTitle size="lg" order="01" title="지원 통계" caption={UPDATED_AT_CAPTION} />
+            <SectionHeader number="01" title="지원 통계" slot={<UpdatedAtCaption />} />
             <div className="flex w-full flex-col gap-4">
-              <div className="flex w-full items-start gap-6">
+              <div className="flex w-full items-stretch gap-6">
                 <div className="w-[581px] shrink-0">
                   <RoundProgressCard {...MOCK_ROUND_PROGRESS} />
                 </div>
@@ -99,7 +99,7 @@ const AdminApplications = () => {
           </section>
 
           <section className="flex w-full flex-col gap-4">
-            <SectionTitle size="lg" order="02" title="지원자 목록" caption={UPDATED_AT_CAPTION} />
+            <SectionHeader number="02" title="지원자 목록" slot={<UpdatedAtCaption />} />
             <div className="flex w-full flex-col gap-5">
               <div className="flex w-full items-start justify-between gap-4">
                 <SearchBar
