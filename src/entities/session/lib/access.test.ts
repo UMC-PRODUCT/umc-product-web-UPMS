@@ -1,8 +1,10 @@
 import type { Role, View } from '../model/types';
 import {
   canEditApplicantStatus,
+  canManageMatching,
   getApplicationsView,
   getChapterScope,
+  getMatchingScheduleAccess,
   getProjectSettingsAccess,
   getViewOptions,
 } from './access';

@@ -12,6 +12,8 @@ export {
   getProjectSettingsAccessSnapshot,
   useApplicationsView,
   useCanEditApplicantStatus,
+  useCanManageMatching,
+  useMatchingScheduleAccess,
   useProjectSettingsAccess,
   useSessionStore,
 } from './model/sessionStore';
