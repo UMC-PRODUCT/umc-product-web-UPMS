@@ -49,7 +49,7 @@ const ApplicantStatusChip = ({ status, onStatusChange }: ApplicantStatusChipProp
           sideOffset={4}
           className="z-(--umc-z-dropdown) flex flex-col gap-2.5 rounded-md bg-white px-3 pt-2.5 pb-3 shadow-drop-neutral-1"
         >
-          <DropdownMenu.Label className="px-0.5 text-caption-1-regular text-teal-grey-500">
+          <DropdownMenu.Label className="px-0.5 text-caption-2-regular text-teal-grey-500">
             배정 상태 변경
           </DropdownMenu.Label>
           {APPLICANT_STATUSES.map((option) => (

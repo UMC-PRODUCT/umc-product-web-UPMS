@@ -6,7 +6,7 @@ const ChartLegend = () => (
     {ROUNDS.map((round) => (
       <li key={round} className="flex w-[61px] items-center gap-1">
         <span aria-hidden className={`size-2 shrink-0 rounded-full ${ROUND_BG_CLASS[round]}`} />
-        <span className="text-caption-1-medium whitespace-nowrap text-teal-grey-700">
+        <span className="text-caption-2-medium whitespace-nowrap text-teal-grey-700">
           {round}차 지원
         </span>
       </li>

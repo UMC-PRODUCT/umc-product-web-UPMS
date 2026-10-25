@@ -19,7 +19,7 @@ const RoundApplicationList = ({ rounds, dotClassNames }: RoundApplicationListPro
               className={`size-1.5 shrink-0 rounded-full ${dotClassNames[round]}`}
             />
           )}
-          <span className="text-caption-1-regular whitespace-nowrap text-teal-grey-600">
+          <span className="text-caption-2-regular whitespace-nowrap text-teal-grey-600">
             {round}차 지원
           </span>
         </span>

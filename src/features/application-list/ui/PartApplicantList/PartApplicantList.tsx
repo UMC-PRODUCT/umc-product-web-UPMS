@@ -44,7 +44,7 @@ const PartApplicantList = ({
           {recruitment.applied}/{recruitment.capacity}
         </p>
       </div>
-      <div className="flex items-center gap-3 rounded-lg bg-teal-grey-75 px-2.5 py-1 text-caption-1-regular whitespace-nowrap">
+      <div className="flex items-center gap-3 rounded-lg bg-teal-grey-75 px-2.5 py-1 text-caption-2-regular whitespace-nowrap">
         {ROUNDS.map((round) => (
           <p key={round} className="flex items-center gap-1">
             <span className="text-teal-grey-800">{round}차</span>

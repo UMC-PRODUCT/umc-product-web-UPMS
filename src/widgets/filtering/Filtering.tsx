@@ -16,7 +16,7 @@ type FilteringProps = {
 // 피그마 필터링 바: "필터" 라벨 + 하나씩 고르는 옵션 버튼 묶음들
 const Filtering = ({ groups, className }: FilteringProps) => (
   <div className={`flex items-center gap-4 px-2.5 ${className ?? ''}`}>
-    <p className="flex items-center gap-0.5 text-caption-1-regular text-teal-grey-500">
+    <p className="flex items-center gap-0.5 text-caption-2-regular text-teal-grey-500">
       <FunnelIcon size={14} />
       필터
     </p>

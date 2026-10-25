@@ -34,7 +34,7 @@ const RecruitmentList = ({
           <div className="flex w-[117px] items-center justify-between">
             <span className="text-body-3-medium text-teal-grey-800">{partLabels[part]}</span>
             {/* 지원 인원 / 모집 인원 */}
-            <span className="flex items-center gap-0.5 text-caption-2-regular text-teal-grey-500">
+            <span className="flex items-center gap-0.5 text-caption-3-regular text-teal-grey-500">
               <span className="min-w-2 text-center">{applied}</span>
               <span className="w-[5px] text-right">/</span>
               <span className="min-w-2 text-center">{capacity}</span>
