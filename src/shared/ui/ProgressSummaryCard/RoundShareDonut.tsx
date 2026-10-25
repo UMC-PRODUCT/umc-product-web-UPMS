@@ -1,7 +1,6 @@
 import { useId } from 'react';
 
-import type { MatchingRound } from '../../model/types';
-import { ROUND_SEGMENT_FILL } from './roundShareColors';
+import { ROUND_SEGMENT_FILL, type SummaryRound } from './roundShareColors';
 
 // 도넛 그래프 크기 (피그마 기준)
 const SIZE = 170.4;
@@ -31,15 +30,21 @@ const getSegmentPath = (start: number, end: number) => {
 };
 
 type RoundShareDonutProps = {
-  rate: number; // 가운데 표시할 지원율 (0 ~ 100)
-  counts: { round: MatchingRound; count: number }[]; // 차수별 지원 인원
-  eligibleCount: number; // 1차 기준 전체 지원 가능 인원 (원 한 바퀴)
+  rate: number; // 가운데 표시할 비율 (0 ~ 100)
+  counts: { round: SummaryRound; count: number }[]; // 차수별 인원
+  eligibleCount: number; // 전체 인원 (원 한 바퀴)
+  fillRest?: boolean; // 남은 부분을 3차 색으로 채움 (PM 지원률). false면 회색 트랙으로 둠 (지부 매칭률)
 };
 
-// 매칭 차수별 지원률 도넛
-// 차수별 조각 = 그 차수 지원 인원 ÷ 전체 지원 가능 인원, 이어 붙이고 나머지는 3차 색으로 채움
-// 지원자가 없으면 회색 원만 (피그마 "데이터 없음")
-const RoundShareDonut = ({ rate, counts, eligibleCount }: RoundShareDonutProps) => {
+// 차수별 비율 도넛 (PM 매칭 차수별 지원률, 지부 프로젝트 매칭률)
+// 차수별 조각 = 그 차수 인원 ÷ 전체 인원, 12시부터 이어 붙임
+// 인원이 없으면 회색 원만 (피그마 "데이터 없음")
+const RoundShareDonut = ({
+  rate,
+  counts,
+  eligibleCount,
+  fillRest = true,
+}: RoundShareDonutProps) => {
   const gradientId = useId();
   const total = counts.reduce((sum, { count }) => sum + count, 0);
   // 각 조각이 끝나는 각도 (한 바퀴를 넘지 않게 자름)
@@ -56,8 +61,8 @@ const RoundShareDonut = ({ rate, counts, eligibleCount }: RoundShareDonutProps) 
       end: ends[index],
     })),
     // 나머지
-    ...(total > 0
-      ? [{ key: 'rest', round: 3 as MatchingRound, start: filledAngle, end: 360 }]
+    ...(fillRest && total > 0
+      ? [{ key: 'rest', round: 3 as SummaryRound, start: filledAngle, end: 360 }]
       : []),
   ];
 

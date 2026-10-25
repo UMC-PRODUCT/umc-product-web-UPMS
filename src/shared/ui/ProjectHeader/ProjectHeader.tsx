@@ -42,7 +42,8 @@ type ProjectHeaderProps = {
   logoUrl: string | null; // 없으면 기본 로고
   pmName: string; // 닉네임/이름
   schoolName: string;
-  aside?: ReactNode; // 오른쪽 위 내용 (Md: 지원한 파트의 모집 인원)
+  aside?: ReactNode; // 오른쪽 내용 (Md: 지원한 파트의 모집 인원, Lg: 제출 시각 · 결과)
+  asideAlign?: 'center' | 'end'; // 오른쪽 내용 세로 위치 (end: 띠 바로 위, 피그마 Form/Header)
   className?: string;
 };
 
@@ -54,6 +55,7 @@ const ProjectHeader = ({
   pmName,
   schoolName,
   aside,
+  asideAlign = 'center',
   className = '',
 }: ProjectHeaderProps) => {
   const style = SIZE_STYLE[size];
@@ -73,7 +75,9 @@ const ProjectHeader = ({
           </div>
           <img src={style.slant.src} alt="" width={style.slant.width} height={style.slant.height} />
         </div>
-        {aside && <div className="self-center">{aside}</div>}
+        {aside && (
+          <div className={asideAlign === 'end' ? 'self-end px-4 pb-1' : 'self-center'}>{aside}</div>
+        )}
       </div>
       <div className={`rounded-tr-xl ${style.strip}`} />
     </div>

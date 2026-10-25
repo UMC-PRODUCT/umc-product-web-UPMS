@@ -1,8 +1,10 @@
 import type { Role, View } from '../model/types';
 import {
   canEditApplicantStatus,
+  canManageMatching,
   getApplicationsView,
   getChapterScope,
+  getMatchingScheduleAccess,
   getProjectSettingsAccess,
   getViewOptions,
 } from './access';
@@ -63,6 +65,41 @@ describe('canEditApplicantStatus', () => {
     const session = { role: 'CHALLENGER_PM' as const, chapterId: 'axolotl' };
     expect(canEditApplicantStatus(session, 'PM_CHALLENGER', null)).toBe(true);
     expect(canEditApplicantStatus(session, 'CHALLENGER', null)).toBe(false);
+  });
+});
+
+describe('canManageMatching', () => {
+  it.each<[Role, boolean]>([
+    ['SUPER_ADMIN', true],
+    ['HQ_LEAD', true],
+    ['HQ_ADMIN', false],
+    ['SCHOOL_ADMIN', false],
+    ['SCHOOL_STAFF', false],
+  ])('Admin View에서 %s의 수동 배정 · 매칭 해제 가능 여부는 %s', (role, expected) => {
+    expect(canManageMatching({ role, chapterId: 'axolotl' }, 'ADMIN', 'axolotl')).toBe(expected);
+  });
+
+  it('지부장은 소속 지부 프로젝트만 수동 배정 · 매칭 해제할 수 있다', () => {
+    const session = { role: 'CHAPTER_ADMIN' as const, chapterId: 'axolotl' };
+    expect(canManageMatching(session, 'ADMIN', 'axolotl')).toBe(true);
+    expect(canManageMatching(session, 'ADMIN', 'quokka')).toBe(false);
+  });
+
+  it('어드민 뷰가 아니면 조회만 가능하다', () => {
+    const session = { role: 'SUPER_ADMIN' as const, chapterId: null };
+    expect(canManageMatching(session, 'PM_CHALLENGER', null)).toBe(false);
+    expect(canManageMatching(session, 'CHALLENGER', null)).toBe(false);
+  });
+});
+
+describe('getMatchingScheduleAccess', () => {
+  it.each<[Role, 'ALL' | 'OWN', boolean]>([
+    ['SUPER_ADMIN', 'ALL', true],
+    ['HQ_LEAD', 'ALL', true],
+    ['HQ_ADMIN', 'ALL', false],
+    ['CHAPTER_ADMIN', 'OWN', true],
+  ])('%s는 %s 지부를 보고, 수정 가능 여부는 %s', (role, chapterScope, editable) => {
+    expect(getMatchingScheduleAccess(role)).toEqual({ chapterScope, editable });
   });
 });
 

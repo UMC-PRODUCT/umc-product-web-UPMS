@@ -1,4 +1,4 @@
-import { PageHeader, Pagination } from '@umc-product/react';
+import { PageHeader, Pagination, SectionHeader } from '@umc-product/react';
 import { useState } from 'react';
 
 import { useCanEditApplicantStatus, useSessionStore } from '@/entities/session';
@@ -18,12 +18,12 @@ import {
   TotalApplicantsCard,
 } from '@/features/application-stats';
 import { useVisibleChapters } from '@/features/chapter-select';
-import { SectionTitle } from '@/shared/ui/SectionTitle';
 import { FilterDropdownGroup } from '@/widgets/filterDropdownGroup';
 import { SearchBar } from '@/widgets/searchBar';
 
+import { getBreadcrumbs } from '../-shared/constants';
+import UpdatedAtCaption from '../-shared/UpdatedAtCaption';
 import ApplicantApplicationModal from './ApplicantApplicationModal';
-import { getBreadcrumbs, UPDATED_AT_CAPTION } from './constants';
 
 // 피그마: 지원자 10명씩 페이지 구분
 const APPLICANTS_PER_PAGE = 10;
@@ -77,13 +77,8 @@ const PmApplications = () => {
 
         <div className="flex w-full max-w-[1076px] flex-col gap-16 rounded-xl px-6 pt-7 pb-8">
           <section className="flex w-full flex-col gap-4">
-            <SectionTitle
-              size="lg"
-              order="01"
-              title="내 프로젝트 지원 통계"
-              caption={UPDATED_AT_CAPTION}
-            />
-            <div className="flex w-full items-start gap-4">
+            <SectionHeader number="01" title="내 프로젝트 지원 통계" slot={<UpdatedAtCaption />} />
+            <div className="flex w-full items-stretch gap-4">
               <div className="w-[581px] shrink-0">
                 <RoundApplicationRateCard {...MOCK_MY_PROJECT_ROUND_PROGRESS} />
               </div>
@@ -95,7 +90,7 @@ const PmApplications = () => {
 
           <div className="flex w-full flex-col items-center gap-10">
             <section className="flex w-full flex-col gap-4">
-              <SectionTitle size="lg" order="02" title="지원자 목록" caption={UPDATED_AT_CAPTION} />
+              <SectionHeader number="02" title="지원자 목록" slot={<UpdatedAtCaption />} />
               <div className="flex w-full flex-col gap-5">
                 <div className="flex w-full items-start justify-between gap-4">
                   <SearchBar

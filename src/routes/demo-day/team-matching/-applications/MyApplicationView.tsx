@@ -7,9 +7,8 @@ import {
   RecruitmentList,
   type RecruitPart,
 } from '@/features/applications';
+import ProjectHeader from '@/shared/ui/ProjectHeader/ProjectHeader';
 import { ApplicationForm } from '@/widgets/application';
-
-import ProjectHeader from './ProjectHeader';
 
 // 지원서 머리는 PE를 플랫폼 이름으로만 표기
 const PART_LABEL: Record<RecruitPart, string> = {

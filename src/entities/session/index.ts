@@ -1,7 +1,9 @@
 export {
   canEditApplicantStatus,
+  canManageMatching,
   getApplicationsView,
   getChapterScope,
+  getMatchingScheduleAccess,
   getProjectSettingsAccess,
   getViewOptions,
   type ViewOption,
@@ -10,6 +12,8 @@ export {
   getProjectSettingsAccessSnapshot,
   useApplicationsView,
   useCanEditApplicantStatus,
+  useCanManageMatching,
+  useMatchingScheduleAccess,
   useProjectSettingsAccess,
   useSessionStore,
 } from './model/sessionStore';

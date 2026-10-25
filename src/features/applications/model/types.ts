@@ -43,7 +43,7 @@ export type ApplicationAnswer =
 
 export type ApplicationQuestion = {
   questionId: string;
-  number: string; // 예: Q1
+  number: string; // 예: 01
   title: string;
   required: boolean;
   answer: ApplicationAnswer;

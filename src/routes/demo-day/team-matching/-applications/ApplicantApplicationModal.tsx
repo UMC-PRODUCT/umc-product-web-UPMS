@@ -19,9 +19,8 @@ import {
   type RecruitPart,
 } from '@/features/application-list';
 import { MOCK_MY_APPLICATION } from '@/features/applications';
+import ProjectHeader from '@/shared/ui/ProjectHeader/ProjectHeader';
 import { ApplicationForm } from '@/widgets/application';
-
-import ProjectHeader from './ProjectHeader';
 
 // 지원서 제목의 파트 이름 (예: Design 파트 지원서)
 const PART_LABEL: Record<PartTagPart, string> = {
@@ -112,7 +111,7 @@ const ApplicantApplicationModal = ({
               <Dialog.Close asChild>
                 <IconButton
                   variant="weak"
-                  color="neutral"
+                  color="white"
                   size="md"
                   icon={<CloseIcon size={24} />}
                   aria-label="닫기"
@@ -158,8 +157,10 @@ const ApplicantApplicationModal = ({
               // 피그마: 헤더(1090px)가 아래 지원서보다 오른쪽이 28px 짧음. 스크롤 영역 안에서 줄지 않도록 shrink-0
               className="shrink-0 pr-7"
             />
-            {/* TODO: 지원자별 지원서 API 연동 */}
-            <ApplicationForm sections={MOCK_MY_APPLICATION} variant="compact" readOnly />
+            <div className="flex flex-col bg-white px-7 pt-7">
+              {/* TODO: 지원자별 지원서 API 연동 */}
+              <ApplicationForm sections={MOCK_MY_APPLICATION} readOnly />
+            </div>
           </div>
         </Dialog.Content>
       )}

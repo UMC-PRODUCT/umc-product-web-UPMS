@@ -1,4 +1,4 @@
-// 지원 현황 뷰들이 같이 쓰는 값
+// 팀 매칭 페이지(지원 현황 · 전체 매칭 현황)가 같이 쓰는 값
 
 export const getBreadcrumbs = (current: string) => [
   { label: '데모데이 매칭', href: '/demo-day' },

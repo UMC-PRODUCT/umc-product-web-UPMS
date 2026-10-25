@@ -9,8 +9,8 @@ import {
 } from '@/features/applications';
 import { useAppToast } from '@/widgets/toast';
 
+import { getBreadcrumbs } from '../-shared/constants';
 import AppliedProjectModal from './AppliedProjectModal';
-import { getBreadcrumbs } from './constants';
 
 // 챌린저 뷰: 내 지원 현황 (매칭 차수별 지원한 프로젝트)
 const ChallengerApplications = () => {
