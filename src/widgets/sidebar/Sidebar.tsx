@@ -28,7 +28,7 @@ const getProjectSettingsGroup = (access: ProjectSettingsAccess): SideNavigationG
     { label: '프로젝트 관리', href: '/demo-day/project-settings/projects' },
   ];
   const fullChildren = [
-    { label: '매칭 차수 관리', href: '/demo-day/project-settings/rounds' },
+    { label: '매칭 차수 설정', href: '/demo-day/project-settings/rounds' },
     { label: '프로젝트 TO 관리', href: '/demo-day/project-settings/quota' },
   ];
 
@@ -61,6 +61,7 @@ const Sidebar = () => {
 
   return (
     <SideNavigation
+      className="w-(--umc-layout-sidebar-width) shrink-0"
       title="11th Demo day"
       items={items}
       currentPath={pathname}

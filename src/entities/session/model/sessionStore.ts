@@ -1,6 +1,14 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 
-import { canManageNotice, getApplicationsView, getProjectSettingsAccess } from '../lib/access';
+import {
+  canEditApplicantStatus,
+  canManageMatching,
+  canManageNotice,
+  getApplicationsView,
+  getMatchingScheduleAccess,
+  getProjectSettingsAccess,
+} from '../lib/access';
 import type { Session, View } from './types';
 
 // TODO: 사용자 정보 API가 나오면 실제 데이터로 교체. 지금은 권한별 화면 확인용 mock.
@@ -41,6 +49,23 @@ export const getCanManageNoticeSnapshot = (chapterId: string) => {
     canManageNotice(session.role, session.chapterId, chapterId)
   );
 };
+// 지원자 배정 상태를 바꿀 수 있는 역할인지 (매칭 기간은 따로 확인)
+export const useCanEditApplicantStatus = (projectChapterId: string | null) =>
+  useSessionStore((state) =>
+    canEditApplicantStatus(
+      state.session,
+      getApplicationsView(state.session.role, state.view),
+      projectChapterId,
+    ),
+  );
+
+// 매칭 결과를 수동 배정 · 해제할 수 있는 역할인지 (최종 결과 발표 여부는 따로 확인)
+export const useCanManageMatching = (projectChapterId: string | null) =>
+  useSessionStore((state) => canManageMatching(state.session, state.view, projectChapterId));
+
+// 매칭 차수 설정에서 고를 수 있는 지부 범위 · 일정 수정 가능 여부 (1차 매칭 시작 여부는 따로 확인)
+export const useMatchingScheduleAccess = () =>
+  useSessionStore(useShallow((state) => getMatchingScheduleAccess(state.session.role)));
 
 // 라우트 beforeLoad처럼 React 밖에서 권한을 확인할 때 사용
 export const getProjectSettingsAccessSnapshot = () => {

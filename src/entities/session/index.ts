@@ -1,7 +1,10 @@
 export {
+  canEditApplicantStatus,
+  canManageMatching,
   canManageNotice,
   getApplicationsView,
   getChapterScope,
+  getMatchingScheduleAccess,
   getProjectSettingsAccess,
   getViewOptions,
   type ViewOption,
@@ -10,7 +13,10 @@ export {
   getCanManageNoticeSnapshot,
   getProjectSettingsAccessSnapshot,
   useApplicationsView,
+  useCanEditApplicantStatus,
+  useCanManageMatching,
   useCanManageNotice,
+  useMatchingScheduleAccess,
   useProjectSettingsAccess,
   useSessionStore,
 } from './model/sessionStore';

@@ -9,5 +9,11 @@
 
 @theme {
   --color-primary-500: #3b82f6;
-  --font-sans: 'Pretendard', system-ui, sans-serif;
+  /* 디자인 시스템이 불러오는 글꼴 이름은 'Pretendard Variable' */
+  --font-sans: var(--umc-font-family-brand);
+}
+
+/* 디자인 시스템 Tooltip은 className을 못 받아서, 줄바꿈을 직접 정한 문구는 표식 클래스로 최대 너비(240px)를 풂 */
+.umc-tooltip__positioner:has(.tooltip-nowrap) {
+  --umc-tooltip-max-width: none;
 }
