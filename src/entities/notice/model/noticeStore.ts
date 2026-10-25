@@ -1,58 +1,78 @@
 import { create } from 'zustand';
 
 import { getMockNotices } from './notices';
-import type { Notice, NoticeInput } from './types';
+import type { Notice, NoticeInput, NoticeKind } from './types';
 
 // TODO: 공지 API가 나오면 이 스토어를 react-query 훅으로 교체. 지금은 화면 흐름 확인용 메모리 저장소.
 type NoticeState = {
-  byChapter: Record<string, Notice[]>;
-  addNotice: (chapterId: string, input: NoticeInput) => Notice;
-  updateNotice: (chapterId: string, noticeId: string, input: NoticeInput) => void;
-  removeNotice: (chapterId: string, noticeId: string) => void;
+  byScope: Record<string, Notice[]>; // `${kind}:${chapterId}` 별 목록
+  addNotice: (
+    kind: NoticeKind,
+    chapterId: string,
+    input: NoticeInput,
+    authorLabel: string,
+  ) => Notice;
+  updateNotice: (kind: NoticeKind, chapterId: string, noticeId: string, input: NoticeInput) => void;
+  removeNotice: (kind: NoticeKind, chapterId: string, noticeId: string) => void;
 };
+
+const scopeOf = (kind: NoticeKind, chapterId: string) => `${kind}:${chapterId}`;
 
 // 처음 조회하는 지부는 목 데이터로 시작한다. 같은 참조를 돌려줘야 리렌더링이 반복되지 않는다.
 const seedCache = new Map<string, Notice[]>();
-const getSeed = (chapterId: string) => {
-  const cached = seedCache.get(chapterId);
+const getSeed = (kind: NoticeKind, chapterId: string) => {
+  const scope = scopeOf(kind, chapterId);
+  const cached = seedCache.get(scope);
   if (cached) return cached;
 
-  const seed = getMockNotices(chapterId);
-  seedCache.set(chapterId, seed);
+  const seed = getMockNotices(kind, chapterId);
+  seedCache.set(scope, seed);
   return seed;
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-export const useNoticeStore = create<NoticeState>()((set, get) => ({
-  byChapter: {},
+export const useNoticeStore = create<NoticeState>()((set, get) => {
+  const read = (kind: NoticeKind, chapterId: string) =>
+    get().byScope[scopeOf(kind, chapterId)] ?? getSeed(kind, chapterId);
+  const write = (kind: NoticeKind, chapterId: string, next: Notice[]) =>
+    set((state) => ({ byScope: { ...state.byScope, [scopeOf(kind, chapterId)]: next } }));
 
-  addNotice: (chapterId, input) => {
-    const notice: Notice = {
-      id: `${chapterId}-${crypto.randomUUID()}`,
-      chapterId,
-      createdAt: today(),
-      ...input,
-    };
-    const current = get().byChapter[chapterId] ?? getSeed(chapterId);
-    set((state) => ({ byChapter: { ...state.byChapter, [chapterId]: [notice, ...current] } }));
-    return notice;
-  },
+  return {
+    byScope: {},
 
-  updateNotice: (chapterId, noticeId, input) => {
-    const current = get().byChapter[chapterId] ?? getSeed(chapterId);
-    const next = current.map((notice) =>
-      notice.id === noticeId ? { ...notice, ...input } : notice,
-    );
-    set((state) => ({ byChapter: { ...state.byChapter, [chapterId]: next } }));
-  },
+    addNotice: (kind, chapterId, input, authorLabel) => {
+      const notice: Notice = {
+        id: `${kind}-${chapterId}-${crypto.randomUUID()}`,
+        kind,
+        chapterId,
+        createdAt: today(),
+        authorLabel,
+        ...input,
+      };
+      write(kind, chapterId, [notice, ...read(kind, chapterId)]);
+      return notice;
+    },
 
-  removeNotice: (chapterId, noticeId) => {
-    const current = get().byChapter[chapterId] ?? getSeed(chapterId);
-    const next = current.filter((notice) => notice.id !== noticeId);
-    set((state) => ({ byChapter: { ...state.byChapter, [chapterId]: next } }));
-  },
-}));
+    updateNotice: (kind, chapterId, noticeId, input) => {
+      write(
+        kind,
+        chapterId,
+        read(kind, chapterId).map((notice) =>
+          notice.id === noticeId ? { ...notice, ...input } : notice,
+        ),
+      );
+    },
 
-export const useNotices = (chapterId: string) =>
-  useNoticeStore((state) => state.byChapter[chapterId] ?? getSeed(chapterId));
+    removeNotice: (kind, chapterId, noticeId) => {
+      write(
+        kind,
+        chapterId,
+        read(kind, chapterId).filter((notice) => notice.id !== noticeId),
+      );
+    },
+  };
+});
+
+export const useNotices = (kind: NoticeKind, chapterId: string) =>
+  useNoticeStore((state) => state.byScope[scopeOf(kind, chapterId)] ?? getSeed(kind, chapterId));

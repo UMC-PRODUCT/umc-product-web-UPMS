@@ -7,9 +7,14 @@ type NoticeCardProps = {
   children: ReactNode;
 };
 
-// 공지 화면(목록·작성)의 흰 카드. 안쪽 여백은 화면마다 달라서 className으로 받는다.
+// 공지 목록·작성 화면의 흰 카드 (피그마 '공지 목록 카드': 모서리 16, 테두리 #eff0f0, 그림자 Drop/Neutral_3)
 const NoticeCard = ({ className, children }: NoticeCardProps) => (
-  <div className={cn('w-full rounded-xl border border-teal-grey-100 bg-white', className)}>
+  <div
+    className={cn(
+      'w-full rounded-2xl border border-teal-grey-100 bg-white shadow-drop-neutral-3',
+      className,
+    )}
+  >
     {children}
   </div>
 );

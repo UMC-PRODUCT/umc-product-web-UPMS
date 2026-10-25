@@ -3,11 +3,13 @@ import { sortNotices } from './sortNotices';
 
 const notice = (id: string, createdAt: string, required = false): Notice => ({
   id,
+  kind: 'TEAM_MATCHING',
   chapterId: 'axolotl',
   title: id,
   content: '',
   createdAt,
   required,
+  authorLabel: 'UMC PRODUCT',
 });
 
 describe('sortNotices', () => {

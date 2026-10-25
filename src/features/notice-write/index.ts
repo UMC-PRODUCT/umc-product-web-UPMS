@@ -1,1 +1,2 @@
-export { default as NoticeForm } from './ui/NoticeForm';
+export { default as NoticeEditForm } from './ui/NoticeEditForm';
+export { default as NoticeWriteForm } from './ui/NoticeWriteForm';
