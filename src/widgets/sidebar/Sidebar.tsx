@@ -9,6 +9,7 @@ import {
   useSessionStore,
   type View,
 } from '@/entities/session';
+import { TEAM_MATCHING_MENU } from '@/shared/config/teamMatchingMenu';
 
 // 사이드바가 선택 상태에 따라 아이콘 색을 바꾸도록 currentColor를 넘긴다
 const peopleIcon = <PeoplePictogram color="currentColor" />;
@@ -16,12 +17,7 @@ const peopleIcon = <PeoplePictogram color="currentColor" />;
 const TEAM_MATCHING_GROUP: SideNavigationGroup = {
   label: '팀 매칭',
   icon: peopleIcon,
-  children: [
-    { label: '공지', href: '/demo-day/team-matching/notice' },
-    { label: '프로젝트 목록', href: '/demo-day/team-matching/projects' },
-    { label: '지원 현황', href: '/demo-day/team-matching/applications' },
-    { label: '전체 매칭 현황', href: '/demo-day/team-matching/status' },
-  ],
+  children: TEAM_MATCHING_MENU,
 };
 
 const getProjectSettingsGroup = (access: ProjectSettingsAccess): SideNavigationGroup | null => {
