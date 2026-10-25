@@ -56,7 +56,7 @@ const ApplicantDetailRow = ({
         className="flex h-[50px] w-[150px] shrink-0 flex-col items-start justify-center gap-0.5 rounded-lg px-3.5 text-left whitespace-nowrap hover:bg-teal-grey-75"
       >
         <span className="text-body-3-medium text-teal-grey-800">{challengerName}</span>
-        <span className="text-caption-2-regular text-teal-grey-500">{schoolName}</span>
+        <span className="text-caption-3-regular text-teal-grey-500">{schoolName}</span>
       </button>
       <div className="flex items-center">
         <p className="w-[38px] text-center text-body-3-medium text-teal-grey-800">{round}차</p>

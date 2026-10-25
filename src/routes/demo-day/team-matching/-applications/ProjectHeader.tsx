@@ -30,7 +30,7 @@ const SIZE_STYLE: Record<
     tab: 'w-[250px] bg-teal-50 pt-4 pb-2 pl-4',
     thumbnail: 32,
     name: 'text-body-3-semibold',
-    sub: 'text-caption-2-regular',
+    sub: 'text-caption-3-regular',
     slant: { src: slantMd, width: 80, height: 67 },
     strip: 'h-2 bg-teal-50',
   },

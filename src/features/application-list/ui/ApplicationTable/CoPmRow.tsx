@@ -12,7 +12,7 @@ const CoPmRow = ({ challengerName, schoolName }: ProjectCoPm) => (
     </div>
     <div className={`flex flex-col gap-1 px-4 whitespace-nowrap ${COLUMN_CLASS.challenger}`}>
       <p className="text-body-3-medium text-teal-grey-800">{challengerName}</p>
-      <p className="text-caption-1-regular text-teal-grey-500">{schoolName}</p>
+      <p className="text-caption-2-regular text-teal-grey-500">{schoolName}</p>
     </div>
   </li>
 );

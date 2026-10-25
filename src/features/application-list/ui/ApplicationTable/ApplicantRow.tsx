@@ -53,7 +53,7 @@ const ApplicantRow = ({
   const challenger = (
     <>
       <span className="text-body-3-medium text-teal-grey-800">{challengerName}</span>
-      <span className="text-caption-2-regular text-teal-grey-500">{schoolName}</span>
+      <span className="text-caption-3-regular text-teal-grey-500">{schoolName}</span>
     </>
   );
 

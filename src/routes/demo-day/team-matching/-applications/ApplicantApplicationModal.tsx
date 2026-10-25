@@ -60,7 +60,7 @@ const PartRecruitmentSummary = ({ project, part }: PartRecruitmentSummaryProps) 
       <p className="flex items-center gap-2.5">
         <span className="text-body-3-medium text-teal-grey-700">{PART_LABEL[part]}</span>
         {/* 지원 인원 / 모집 인원 */}
-        <span className="flex items-center gap-0.5 text-caption-2-regular text-teal-grey-500">
+        <span className="flex items-center gap-0.5 text-caption-3-regular text-teal-grey-500">
           <span className="min-w-2 text-center">{recruitment.applied}</span>
           <span className="w-[5px] text-right">/</span>
           <span className="min-w-2 text-center">{recruitment.capacity}</span>
