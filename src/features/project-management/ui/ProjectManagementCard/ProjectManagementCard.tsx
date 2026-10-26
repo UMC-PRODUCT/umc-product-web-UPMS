@@ -1,5 +1,7 @@
 import { MoreVerticalIcon } from '@umc-product/icons';
-import { Tag, type TagColor } from '@umc-product/react';
+import { Menu, type MenuItemDef, Tag, type TagColor } from '@umc-product/react';
+
+import type { Role } from '@/entities/session';
 
 import type {
   ManagedProject,
@@ -26,6 +28,12 @@ const PART_LABEL: Record<RecruitPart, string> = {
   MOBILE_PE: 'Mobile PE',
 };
 
+const canDeleteProject = (role: Role, projectChapterId: string, ownChapterId: string) => {
+  if (role === 'SUPER_ADMIN') return true;
+  if (role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN') return projectChapterId === ownChapterId;
+  return false;
+};
+
 const RecruitmentRow = ({ part, applied, capacity, status }: PartRecruitment) => (
   <li className="flex items-center justify-between">
     <div className="flex w-[117px] items-center justify-between">
@@ -49,17 +57,58 @@ const RecruitmentRow = ({ part, applied, capacity, status }: PartRecruitment) =>
 
 type ProjectManagementCardProps = {
   project: ManagedProject;
+  role: Role;
+  ownChapterId: string;
   isPmChallenger?: boolean;
-  onMoreClick?: () => void;
+  isMatchingPeriod?: boolean;
+  onViewApplications?: () => void;
+  onManageApproval?: () => void;
+  onDelete?: () => void;
 };
 
 const ProjectManagementCard = ({
   project,
+  role,
+  ownChapterId,
   isPmChallenger = false,
-  onMoreClick,
+  isMatchingPeriod = false,
+  onViewApplications,
+  onManageApproval,
+  onDelete,
 }: ProjectManagementCardProps) => {
-  const { projectName, logoUrl, thumbnailUrl, pmName, schoolName, status, recruitments } = project;
+  const {
+    projectName,
+    logoUrl,
+    thumbnailUrl,
+    pmName,
+    schoolName,
+    status,
+    recruitments,
+    chapterId,
+  } = project;
   const statusTag = (isPmChallenger ? PM_STATUS_TAG : ADMIN_STATUS_TAG)[status];
+
+  const menuItems = (() => {
+    if (isPmChallenger) {
+      const items: MenuItemDef[] = [];
+      if (status !== 'DRAFT') {
+        items.push({ label: '지원 현황 확인하기', onClick: onViewApplications });
+      }
+      items.push({ label: '삭제', onClick: onDelete, disabled: isMatchingPeriod });
+      return items;
+    }
+    if (role === 'HQ_ADMIN') {
+      return [{ label: '지원 현황 확인하기', onClick: onViewApplications }];
+    }
+    const items: MenuItemDef[] = [
+      { label: '지원 현황 확인하기', onClick: onViewApplications },
+      { label: '프로젝트 승인 관리', onClick: onManageApproval },
+    ];
+    if (canDeleteProject(role, chapterId, ownChapterId)) {
+      items.push({ label: '삭제', onClick: onDelete, disabled: !isMatchingPeriod });
+    }
+    return items;
+  })();
 
   return (
     <article className="flex w-full items-center gap-7 rounded-2xl border border-teal-grey-100 bg-white py-2.5 pr-5 pl-2.5 shadow-drop-neutral-2">
@@ -85,14 +134,21 @@ const ProjectManagementCard = ({
                 {statusTag.label}
               </Tag>
             </div>
-            <button
-              type="button"
-              aria-label="더보기"
-              onClick={onMoreClick}
-              className="shrink-0 rounded p-1 text-teal-grey-500 hover:bg-teal-grey-75"
-            >
-              <MoreVerticalIcon size={20} />
-            </button>
+            {menuItems && (
+              <Menu
+                trigger={
+                  <button
+                    type="button"
+                    aria-label="더보기"
+                    className="shrink-0 rounded p-1 text-teal-grey-500 hover:bg-teal-grey-75"
+                  >
+                    <MoreVerticalIcon size={20} />
+                  </button>
+                }
+                items={menuItems}
+                size="sm"
+              />
+            )}
           </div>
           <p className="text-body-3-medium text-teal-grey-500">
             {pmName} · {schoolName}
