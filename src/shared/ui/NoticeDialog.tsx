@@ -28,7 +28,7 @@ const NoticeDialog = ({
       <div className="umc-dialog__viewport">
         <AlertDialog.Content
           className="umc-dialog__popup"
-          data-color="primary"
+          data-color="brand"
           data-button-style="fill"
         >
           <div className="umc-dialog__text">
@@ -44,7 +44,7 @@ const NoticeDialog = ({
               {description}
             </AlertDialog.Description>
           </div>
-          <div className="umc-dialog__actions" data-variant="fill" data-color="primary">
+          <div className="umc-dialog__actions" data-variant="fill" data-color="brand">
             <AlertDialog.Action asChild>
               <Button size="xs" onClick={onConfirm}>
                 {confirmLabel}
