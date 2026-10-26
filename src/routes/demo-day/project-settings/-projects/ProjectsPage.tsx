@@ -4,8 +4,10 @@ import { useState } from 'react';
 
 import { type Role, useSessionStore, type View } from '@/entities/session';
 import { ChapterSelectHeader, useVisibleChapters } from '@/features/chapter-select';
+import { ProjectManagementCard } from '@/features/project-management';
 
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
+import { MOCK_PROJECTS } from './mock';
 
 const BREADCRUMBS = [
   { label: '데모데이 매칭', href: '/demo-day' },
@@ -60,7 +62,7 @@ const ProjectsPage = () => {
   );
 
   // TODO: 지부별 프로젝트 목록 API 연동
-  const projects: unknown[] = [];
+  const projects = MOCK_PROJECTS.filter((p) => p.chapterId === chapterId);
 
   const isPmChallenger = view === 'PM_CHALLENGER';
 
@@ -74,23 +76,64 @@ const ProjectsPage = () => {
       />
 
       <div className="flex w-full max-w-[1082px] flex-col gap-3">
-        {!isPmChallenger && (
-          <div className="flex items-center justify-between gap-4">
-            <ChapterSelectHeader value={chapterId} onValueChange={setChapterId} />
-            {canRegisterProject(role) && (
-              <Button size="sm" className="h-11 shrink-0">
-                <div className="flex items-center gap-2">
-                  <AddIcon size={16} />
-                  프로젝트 등록
-                </div>
-              </Button>
-            )}
+        <div className="flex items-center justify-between gap-4">
+          <ChapterSelectHeader value={chapterId} onValueChange={setChapterId} />
+          {canRegisterProject(role) && (
+            <Button size="sm" className="h-11 shrink-0">
+              <div className="flex items-center gap-2">
+                <AddIcon size={16} />
+                프로젝트 등록
+              </div>
+            </Button>
+          )}
+        </div>
+
+        {projects.length === 0 ? (
+          <div className="flex min-h-[400px] w-full items-center justify-center rounded-xl border border-teal-grey-100 bg-white shadow-drop-neutral-3">
+            <EmptyState showRegisterButton={isPmChallenger} />
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            {(() => {
+              const webProjects = projects.filter((p) => p.platform === 'WEB');
+              const mobileProjects = projects.filter((p) => p.platform === 'MOBILE');
+              return (
+                <>
+                  {webProjects.length > 0 && (
+                    <section className="mt-8 flex flex-col">
+                      <h2 className="mb-[10px] text-title-2-semibold">Web</h2>
+                      <ul className="flex flex-col gap-[10px]">
+                        {webProjects.map((project) => (
+                          <li key={project.projectId}>
+                            <ProjectManagementCard
+                              project={project}
+                              isPmChallenger={isPmChallenger}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                  {mobileProjects.length > 0 && (
+                    <section className="mt-10 flex flex-col">
+                      <h2 className="mb-[10px] text-title-2-semibold">Mobile</h2>
+                      <ul className="flex flex-col gap-[10px]">
+                        {mobileProjects.map((project) => (
+                          <li key={project.projectId}>
+                            <ProjectManagementCard
+                              project={project}
+                              isPmChallenger={isPmChallenger}
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
-
-        <div className="flex min-h-[400px] w-full items-center justify-center rounded-xl border border-teal-grey-100 bg-white shadow-drop-neutral-3">
-          {projects.length === 0 && <EmptyState showRegisterButton={isPmChallenger} />}
-        </div>
       </div>
     </main>
   );
