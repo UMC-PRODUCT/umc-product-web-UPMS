@@ -7,7 +7,7 @@ import { ChapterSelectHeader, useVisibleChapters } from '@/features/chapter-sele
 import { ProjectManagementCard } from '@/features/project-management';
 
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
-import { MOCK_PROJECTS } from './mock';
+import { MOCK_PM_PROJECTS, MOCK_PROJECTS } from './mock';
 
 const BREADCRUMBS = [
   { label: '데모데이 매칭', href: '/demo-day' },
@@ -61,10 +61,12 @@ const ProjectsPage = () => {
     () => chapters.find((c) => c.id === ownChapterId)?.id ?? chapters[0]?.id ?? '',
   );
 
-  // TODO: 지부별 프로젝트 목록 API 연동
-  const projects = MOCK_PROJECTS.filter((p) => p.chapterId === chapterId);
-
   const isPmChallenger = view === 'PM_CHALLENGER';
+
+  // TODO: API 연동 (PM 챌린저: 본인 프로젝트 / 어드민: 지부별 프로젝트 목록)
+  const projects = isPmChallenger
+    ? MOCK_PM_PROJECTS
+    : MOCK_PROJECTS.filter((p) => p.chapterId === chapterId);
 
   return (
     <main className="flex flex-col items-start gap-8 px-8 pt-12 pb-20">
@@ -75,11 +77,13 @@ const ProjectsPage = () => {
         description={getDescription(role, view)}
       />
 
-      <div className="flex w-full max-w-[1082px] flex-col gap-3">
+      <div className="flex w-full max-w-[1082px] flex-col">
         <div className="flex items-center justify-between gap-4">
-          <ChapterSelectHeader value={chapterId} onValueChange={setChapterId} />
+          {!isPmChallenger && (
+            <ChapterSelectHeader value={chapterId} onValueChange={setChapterId} />
+          )}
           {canRegisterProject(role) && (
-            <Button size="sm" className="h-11 shrink-0">
+            <Button size="sm" className="ml-auto h-11 shrink-0">
               <div className="flex items-center gap-2">
                 <AddIcon size={16} />
                 프로젝트 등록
@@ -92,6 +96,19 @@ const ProjectsPage = () => {
           <div className="flex min-h-[400px] w-full items-center justify-center rounded-xl border border-teal-grey-100 bg-white shadow-drop-neutral-3">
             <EmptyState showRegisterButton={isPmChallenger} />
           </div>
+        ) : isPmChallenger ? (
+          <ul className="mt-2 flex flex-col gap-[10px]">
+            {projects.map((project) => (
+              <li key={project.projectId}>
+                <ProjectManagementCard
+                  project={project}
+                  role={role}
+                  ownChapterId={ownChapterId ?? ''}
+                  isPmChallenger
+                />
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="flex flex-col">
             {(() => {
@@ -107,7 +124,8 @@ const ProjectsPage = () => {
                           <li key={project.projectId}>
                             <ProjectManagementCard
                               project={project}
-                              isPmChallenger={isPmChallenger}
+                              role={role}
+                              ownChapterId={ownChapterId ?? ''}
                             />
                           </li>
                         ))}
@@ -122,7 +140,8 @@ const ProjectsPage = () => {
                           <li key={project.projectId}>
                             <ProjectManagementCard
                               project={project}
-                              isPmChallenger={isPmChallenger}
+                              role={role}
+                              ownChapterId={ownChapterId ?? ''}
                             />
                           </li>
                         ))}

@@ -1,5 +1,54 @@
 import type { ManagedProject } from '@/features/project-management';
 
+// PM 챌린저 본인 프로젝트 (단일 플랫폼, 상태별 3개)
+export const MOCK_PM_PROJECTS: ManagedProject[] = [
+  {
+    projectId: 'pm-1',
+    chapterId: 'otter',
+    projectName: 'UMC 플랫폼',
+    logoUrl: null,
+    thumbnailUrl: null,
+    pmName: '김성연',
+    schoolName: '성신여대',
+    status: 'APPROVED',
+    platform: 'WEB',
+    recruitments: [
+      { part: 'DESIGN', applied: 2, capacity: 2, status: 'CLOSED' },
+      { part: 'WEB_PE', applied: 1, capacity: 2, status: 'RECRUITING' },
+    ],
+  },
+  {
+    projectId: 'pm-2',
+    chapterId: 'otter',
+    projectName: '캠퍼스 일정 관리',
+    logoUrl: null,
+    thumbnailUrl: null,
+    pmName: '김성연',
+    schoolName: '성신여대',
+    status: 'PENDING',
+    platform: 'WEB',
+    recruitments: [
+      { part: 'DESIGN', applied: 1, capacity: 2, status: 'RECRUITING' },
+      { part: 'WEB_PE', applied: 0, capacity: 3, status: 'RECRUITING' },
+    ],
+  },
+  {
+    projectId: 'pm-3',
+    chapterId: 'otter',
+    projectName: '스터디 매칭 서비스',
+    logoUrl: null,
+    thumbnailUrl: null,
+    pmName: '김성연',
+    schoolName: '성신여대',
+    status: 'DRAFT',
+    platform: 'WEB',
+    recruitments: [
+      { part: 'DESIGN', applied: 0, capacity: 2, status: 'RECRUITING' },
+      { part: 'WEB_PE', applied: 0, capacity: 2, status: 'RECRUITING' },
+    ],
+  },
+];
+
 export const MOCK_PROJECTS: ManagedProject[] = [
   // 캥거루 지부
   {
@@ -16,51 +65,51 @@ export const MOCK_PROJECTS: ManagedProject[] = [
       { part: 'DESIGN', applied: 2, capacity: 2, status: 'CLOSED' },
       { part: 'WEB_PE', applied: 3, capacity: 3, status: 'CLOSED' },
     ],
-  },
-  {
-    projectId: 'k-2',
-    chapterId: 'kangaroo',
-    projectName: '스터디 매칭 서비스',
-    logoUrl: null,
-    thumbnailUrl: null,
-    pmName: '이수연',
-    schoolName: '한성대',
-    status: 'PENDING',
-    platform: 'WEB',
-    recruitments: [
-      { part: 'DESIGN', applied: 1, capacity: 2, status: 'RECRUITING' },
-      { part: 'WEB_PE', applied: 2, capacity: 3, status: 'RECRUITING' },
-    ],
-  },
-  {
-    projectId: 'k-3',
-    chapterId: 'kangaroo',
-    projectName: '중고 교재 거래',
-    logoUrl: null,
-    thumbnailUrl: null,
-    pmName: '박서현',
-    schoolName: '서울여대',
-    status: 'DRAFT',
-    platform: 'MOBILE',
-    recruitments: [
-      { part: 'DESIGN', applied: 0, capacity: 1, status: 'RECRUITING' },
-      { part: 'MOBILE_PE', applied: 0, capacity: 2, status: 'RECRUITING' },
-    ],
-  },
-  {
-    projectId: 'k-4',
-    chapterId: 'kangaroo',
-    projectName: '학식 리뷰 앱',
-    logoUrl: null,
-    thumbnailUrl: null,
-    pmName: '최민재',
-    schoolName: '한국항공대',
-    status: 'APPROVED',
-    platform: 'MOBILE',
-    recruitments: [
-      { part: 'DESIGN', applied: 2, capacity: 2, status: 'CLOSED' },
-      { part: 'MOBILE_PE', applied: 4, capacity: 4, status: 'CLOSED' },
-    ],
+    // },
+    // {
+    //   projectId: 'k-2',
+    //   chapterId: 'kangaroo',
+    //   projectName: '스터디 매칭 서비스',
+    //   logoUrl: null,
+    //   thumbnailUrl: null,
+    //   pmName: '이수연',
+    //   schoolName: '한성대',
+    //   status: 'PENDING',
+    //   platform: 'WEB',
+    //   recruitments: [
+    //     { part: 'DESIGN', applied: 1, capacity: 2, status: 'RECRUITING' },
+    //     { part: 'WEB_PE', applied: 2, capacity: 3, status: 'RECRUITING' },
+    //   ],
+    // },
+    // {
+    //   projectId: 'k-3',
+    //   chapterId: 'kangaroo',
+    //   projectName: '중고 교재 거래',
+    //   logoUrl: null,
+    //   thumbnailUrl: null,
+    //   pmName: '박서현',
+    //   schoolName: '서울여대',
+    //   status: 'DRAFT',
+    //   platform: 'MOBILE',
+    //   recruitments: [
+    //     { part: 'DESIGN', applied: 0, capacity: 1, status: 'RECRUITING' },
+    //     { part: 'MOBILE_PE', applied: 0, capacity: 2, status: 'RECRUITING' },
+    //   ],
+    // },
+    // {
+    //   projectId: 'k-4',
+    //   chapterId: 'kangaroo',
+    //   projectName: '학식 리뷰 앱',
+    //   logoUrl: null,
+    //   thumbnailUrl: null,
+    //   pmName: '최민재',
+    //   schoolName: '한국항공대',
+    //   status: 'APPROVED',
+    //   platform: 'MOBILE',
+    //   recruitments: [
+    //     { part: 'DESIGN', applied: 2, capacity: 2, status: 'CLOSED' },
+    //     { part: 'MOBILE_PE', applied: 4, capacity: 4, status: 'CLOSED' },
+    //   ],
   },
 
   // 아홀로틀 지부
