@@ -13,7 +13,7 @@ type NoticeDialogProps = {
   description: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string; // 있으면 취소 버튼이 붙는다 (취소는 onDismiss)
-  color?: 'primary' | 'error';
+  color?: 'brand' | 'error';
   className?: string; // 색 등 디자인 시스템 변수를 덮어쓸 때
 };
 
@@ -29,7 +29,7 @@ const NoticeDialog = ({
   description,
   confirmLabel = '확인',
   cancelLabel,
-  color = 'primary',
+  color = 'brand',
   className,
 }: NoticeDialogProps) => {
   // 확인 버튼을 눌러 닫힌 경우에는 onConfirm을 이미 불렀으니 닫힘 이벤트에서 다시 부르지 않는다
@@ -86,9 +86,9 @@ const NoticeDialog = ({
               <AlertDialog.Action asChild>
                 <Button
                   size="xs"
-                  // DS Dialog와 같게: error는 연한 빨강 버튼, primary는 채운 버튼
+                  // DS Dialog와 같게: error는 연한 빨강 버튼, brand는 채운 버튼
                   variant={color === 'error' ? 'weak' : 'fill'}
-                  color={color === 'error' ? 'red' : 'primary'}
+                  color={color === 'error' ? 'red' : 'brand'}
                   onClick={handleConfirm}
                 >
                   {confirmLabel}

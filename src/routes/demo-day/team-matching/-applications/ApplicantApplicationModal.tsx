@@ -1,7 +1,10 @@
 import { CloseIcon } from '@umc-product/icons';
 import {
   Dimmed,
+  FormHeader,
+  FormSheet,
   IconButton,
+  ImageThumbnail,
   OptionButtonGroup,
   type PartTagPart,
   StatusTag,
@@ -19,7 +22,6 @@ import {
   type RecruitPart,
 } from '@/features/application-list';
 import { MOCK_MY_APPLICATION } from '@/features/applications';
-import ProjectHeader from '@/shared/ui/ProjectHeader/ProjectHeader';
 import { ApplicationForm } from '@/widgets/application';
 
 // 지원서 제목의 파트 이름 (예: Design 파트 지원서)
@@ -47,7 +49,7 @@ type PartRecruitmentSummaryProps = {
   part: PartTagPart; // 지원자가 지원한 파트
 };
 
-// 프로젝트 헤더 오른쪽 위: 지원한 파트의 지원/모집 인원과 모집 상태
+// 지원서 머리 오른쪽: 지원한 파트의 지원/모집 인원과 모집 상태
 const PartRecruitmentSummary = ({ project, part }: PartRecruitmentSummaryProps) => {
   const recruitPart = RECRUIT_PART[part];
   const recruitment = recruitPart && project.recruitments[recruitPart];
@@ -146,21 +148,27 @@ const ApplicantApplicationModal = ({
           </div>
           {/* min-h-0이 있어야 남은 높이 안에서 스크롤됨 */}
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto pb-8">
-            {/* TODO: 지원서 API 연동 시 프로젝트 로고 연동 */}
-            <ProjectHeader
-              size="md"
-              projectName={project.projectName}
-              logoUrl={null}
-              pmName={project.challengerName}
-              schoolName={project.schoolName}
-              aside={<PartRecruitmentSummary project={project} part={applicant.part} />}
-              // 피그마: 헤더(1090px)가 아래 지원서보다 오른쪽이 28px 짧음. 스크롤 영역 안에서 줄지 않도록 shrink-0
-              className="shrink-0 pr-7"
-            />
-            <div className="flex flex-col bg-white px-7 pt-7">
+            {/* 스크롤 영역 안에서 줄지 않도록 shrink-0 */}
+            <FormSheet
+              className="shrink-0"
+              header={
+                <FormHeader
+                  thumbnail={
+                    // TODO: 지원서 API 연동 시 프로젝트 로고 연동
+                    <ImageThumbnail src={null} alt={`${project.projectName} 로고`} size={50} />
+                  }
+                  title={project.projectName}
+                  subtitle={`${project.challengerName} · ${project.schoolName}`}
+                  // TODO: 피그마 Form/Header의 caption이 비어 있음. 모집 인원 요약을 둘 자리가 정해지면 옮김
+                  caption={<PartRecruitmentSummary project={project} part={applicant.part} />}
+                />
+              }
+              // 피그마: 버튼 없이 위 여백(24px)만 있는 액션 줄. null도 줄을 그림
+              action={null}
+            >
               {/* TODO: 지원자별 지원서 API 연동 */}
               <ApplicationForm sections={MOCK_MY_APPLICATION} readOnly />
-            </div>
+            </FormSheet>
           </div>
         </Dialog.Content>
       )}

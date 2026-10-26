@@ -1,5 +1,12 @@
 import { RemoveCircleIcon, WarningTriangleIcon } from '@umc-product/icons';
-import { Button, Dialog, StatusTag } from '@umc-product/react';
+import {
+  Button,
+  Dialog,
+  FormHeader,
+  FormSheet,
+  ImageThumbnail,
+  StatusTag,
+} from '@umc-product/react';
 import { useState } from 'react';
 
 import { MOCK_MY_APPLICATION } from '@/features/applications';
@@ -9,7 +16,6 @@ import type {
   PartMatching,
   ProjectMatchingResult,
 } from '@/features/matching-status';
-import ProjectHeader from '@/shared/ui/ProjectHeader/ProjectHeader';
 import UpmsPanel from '@/shared/ui/UpmsPanel';
 import { ApplicationForm } from '@/widgets/application';
 
@@ -48,7 +54,7 @@ type MatchedApplicationModalProps = {
 };
 
 // 매칭 결과 시트에서 매칭된 챌린저 이름을 누르면 뜨는 파트 지원서
-// 지원 현황의 지원자 지원서 모달과 같은 틀(UpmsPanel · ProjectHeader · ApplicationForm)에 어드민만 매칭 해제 가능
+// 지원 현황의 지원자 지원서 모달과 같은 틀(UpmsPanel · FormSheet · ApplicationForm)에 어드민만 매칭 해제 가능
 const MatchedApplicationModal = ({
   target,
   chapterName,
@@ -94,32 +100,36 @@ const MatchedApplicationModal = ({
     >
       {target && (
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5">
-          {/* TODO: 지원서 API 연동 시 프로젝트 로고 연동 */}
-          <ProjectHeader
-            size="lg"
-            projectName={target.project.projectName}
-            logoUrl={null}
-            pmName={target.project.pmName}
-            schoolName={target.project.pmSchoolName}
-            asideAlign="end"
-            aside={
-              <p className="flex items-center gap-3 whitespace-nowrap">
-                {target.member.submittedAt && (
-                  <span className="flex items-center gap-1.5 text-body-3-medium text-teal-grey-600">
-                    <span>{formatDateTime(target.member.submittedAt)}</span>
-                    <span>제출됨</span>
-                  </span>
-                )}
-                {/* 매칭된 챌린저는 합격 */}
-                <StatusTag color="brand">합격</StatusTag>
-              </p>
-            }
+          <FormSheet
             className="shrink-0"
-          />
-          <div className="flex flex-col bg-white px-7 pt-7 pb-8">
+            header={
+              <FormHeader
+                // TODO: 지원서 API 연동 시 프로젝트 로고 연동
+                thumbnail={
+                  <ImageThumbnail src={null} alt={`${target.project.projectName} 로고`} size={50} />
+                }
+                title={target.project.projectName}
+                subtitle={`${target.project.pmName} · ${target.project.pmSchoolName}`}
+                caption={
+                  <>
+                    {target.member.submittedAt && (
+                      <span className="flex items-center gap-1.5 whitespace-nowrap">
+                        <span>{formatDateTime(target.member.submittedAt)}</span>
+                        <span>제출됨</span>
+                      </span>
+                    )}
+                    {/* 매칭된 챌린저는 합격 */}
+                    <StatusTag color="success">합격</StatusTag>
+                  </>
+                }
+              />
+            }
+            // 피그마: 버튼 없이 위 여백(24px)만 있는 액션 줄. null도 줄을 그림
+            action={null}
+          >
             {/* TODO: 매칭된 챌린저의 지원서 API 연동 */}
             <ApplicationForm sections={MOCK_MY_APPLICATION} readOnly />
-          </div>
+          </FormSheet>
         </div>
       )}
       {target && onRelease && (
