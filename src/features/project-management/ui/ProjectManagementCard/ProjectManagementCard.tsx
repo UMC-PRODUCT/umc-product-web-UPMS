@@ -94,7 +94,11 @@ const ProjectManagementCard = ({
       if (status !== 'DRAFT') {
         items.push({ label: '지원 현황 확인하기', onClick: onViewApplications });
       }
-      items.push({ label: '삭제', onClick: onDelete, disabled: isMatchingPeriod });
+      items.push({
+        label: <span className={isMatchingPeriod ? undefined : 'text-error'}>삭제</span>,
+        onClick: onDelete,
+        disabled: isMatchingPeriod,
+      });
       return items;
     }
     if (role === 'HQ_ADMIN') {
@@ -105,7 +109,11 @@ const ProjectManagementCard = ({
       { label: '프로젝트 승인 관리', onClick: onManageApproval },
     ];
     if (canDeleteProject(role, chapterId, ownChapterId)) {
-      items.push({ label: '삭제', onClick: onDelete, disabled: !isMatchingPeriod });
+      items.push({
+        label: <span className={!isMatchingPeriod ? undefined : 'text-error'}>삭제</span>,
+        onClick: onDelete,
+        disabled: !isMatchingPeriod,
+      });
     }
     return items;
   })();
