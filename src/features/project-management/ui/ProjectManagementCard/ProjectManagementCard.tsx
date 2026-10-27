@@ -34,6 +34,7 @@ const canDeleteProject = (role: Role, projectChapterId: string, ownChapterId: st
   return false;
 };
 
+// 파트별 모집 현황 행 컴포넌트
 const RecruitmentRow = ({ part, applied, capacity, status }: PartRecruitment) => (
   <li className="flex items-center justify-between">
     <div className="flex w-[117px] items-center justify-between">
@@ -60,7 +61,9 @@ type ProjectManagementCardProps = {
   role: Role;
   ownChapterId: string;
   isPmChallenger?: boolean;
+  isApplicationPeriod?: boolean;
   isMatchingPeriod?: boolean;
+  onCardClick?: () => void;
   onViewApplications?: () => void;
   onManageApproval?: () => void;
   onDelete?: () => void;
@@ -71,7 +74,9 @@ const ProjectManagementCard = ({
   role,
   ownChapterId,
   isPmChallenger = false,
-  isMatchingPeriod = false,
+  isApplicationPeriod = false,
+  isMatchingPeriod = true,
+  onCardClick,
   onViewApplications,
   onManageApproval,
   onDelete,
@@ -88,10 +93,11 @@ const ProjectManagementCard = ({
   } = project;
   const statusTag = (isPmChallenger ? PM_STATUS_TAG : ADMIN_STATUS_TAG)[status];
 
+  // 역할, 기간별 메뉴 아이템 구성
   const menuItems = (() => {
     if (isPmChallenger) {
       const items: MenuItemDef[] = [];
-      if (status !== 'DRAFT') {
+      if (status === 'APPROVED') {
         items.push({ label: '지원 현황 확인하기', onClick: onViewApplications });
       }
       items.push({
@@ -110,16 +116,19 @@ const ProjectManagementCard = ({
     ];
     if (canDeleteProject(role, chapterId, ownChapterId)) {
       items.push({
-        label: <span className={!isMatchingPeriod ? undefined : 'text-error'}>삭제</span>,
+        label: <span className={isApplicationPeriod ? undefined : 'text-error'}>삭제</span>,
         onClick: onDelete,
-        disabled: !isMatchingPeriod,
+        disabled: isApplicationPeriod,
       });
     }
     return items;
   })();
 
   return (
-    <article className="flex w-full items-center gap-7 rounded-2xl border border-teal-grey-100 bg-white py-2.5 pr-5 pl-2.5 shadow-drop-neutral-2">
+    <article
+      className={`flex w-full items-center gap-7 rounded-2xl border border-teal-grey-100 bg-white py-2.5 pr-5 pl-2.5 shadow-drop-neutral-2${onCardClick ? 'cursor-pointer' : ''}`}
+      onClick={onCardClick}
+    >
       <div className="h-40 w-80 shrink-0 overflow-hidden rounded-[10px] bg-teal-grey-100">
         {thumbnailUrl && <img src={thumbnailUrl} alt="" className="size-full object-cover" />}
       </div>
@@ -143,19 +152,21 @@ const ProjectManagementCard = ({
               </Tag>
             </div>
             {menuItems && (
-              <Menu
-                trigger={
-                  <button
-                    type="button"
-                    aria-label="더보기"
-                    className="shrink-0 rounded p-1 text-teal-grey-500 hover:bg-teal-grey-75"
-                  >
-                    <MoreVerticalIcon size={20} />
-                  </button>
-                }
-                items={menuItems}
-                size="sm"
-              />
+              <div onClick={(e) => e.stopPropagation()}>
+                <Menu
+                  trigger={
+                    <button
+                      type="button"
+                      aria-label="더보기"
+                      className="shrink-0 rounded p-1 text-teal-grey-500 hover:bg-teal-grey-75"
+                    >
+                      <MoreVerticalIcon size={20} />
+                    </button>
+                  }
+                  items={menuItems}
+                  size="sm"
+                />
+              </div>
             )}
           </div>
           <p className="text-body-3-medium text-teal-grey-500">
