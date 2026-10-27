@@ -8,7 +8,10 @@ type ScheduleFieldRowProps = {
 
 // 피그마 기본 매칭 일정 한 줄: 90px 라벨 + 입력 영역
 const ScheduleFieldRow = ({ label, align = 'start', children }: ScheduleFieldRowProps) => (
-  <div className={`flex gap-6 ${align === 'center' ? 'items-center' : 'items-start'}`}>
+  // 좁은 화면에서는 입력 영역을 라벨 아래로 내림
+  <div
+    className={`flex flex-wrap gap-x-6 gap-y-2 ${align === 'center' ? 'items-center' : 'items-start'}`}
+  >
     <p
       className={`flex w-[90px] shrink-0 items-center text-body-1-regular text-teal-grey-800 ${
         align === 'start' ? 'h-11' : ''

@@ -24,6 +24,13 @@ export const apiClient = axios.create({
   timeout: 10_000,
 });
 
+// TODO: 로그인 연동 시 로그인 쪽에서 받은 토큰으로 교체. 지금은 개발용 토큰만 붙임
+apiClient.interceptors.request.use((config) => {
+  const token = import.meta.env.VITE_DEV_ACCESS_TOKEN;
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 apiClient.interceptors.response.use(undefined, (error: AxiosError<ApiResponse<unknown>>) => {
   const status = error.response?.status ?? 0;
   const body = error.response?.data;

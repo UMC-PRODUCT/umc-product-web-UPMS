@@ -3,22 +3,26 @@ import { CheckPictogram, WarningTriangleIcon } from '@umc-product/icons';
 import { Button, Dialog, PageHeader, SectionHeader, SegmentedControl } from '@umc-product/react';
 import { useState } from 'react';
 
-import { MOCK_CHAPTERS } from '@/entities/chapter';
+import { useChapters } from '@/entities/chapter';
 import { useMatchingScheduleAccess, useSessionStore } from '@/entities/session';
 import {
   AnnouncementTimeField,
   calculateSchedule,
+  isAnnounceTimeAllowed,
   isScheduleLocked,
   isValidTime,
   type MatchingScheduleSetting,
   type MatchingTrack,
-  MOCK_MATCHING_SCHEDULES,
+  MIN_ANNOUNCE_TIME,
   OverallScheduleField,
   parseDate,
   RoundPeriodField,
   ScheduleCalendar,
   ScheduleChapterField,
   type ScheduleRound,
+  toScheduleByTrack,
+  useMatchingRounds,
+  useSaveMatchingSchedule,
 } from '@/features/matching-schedule';
 import NoticeDialog from '@/shared/ui/NoticeDialog';
 import { useAppToast } from '@/widgets/toast';
@@ -46,10 +50,9 @@ const TOAST_MESSAGE = {
   startDateFirst: '전체 매칭 시작일을 적어주세요',
   incomplete: '모든 일정을 입력하세요',
   saved: '매칭 차수가 저장되었어요',
+  // TODO: 피그마 토스트 케이스에 없는 문구. 기획 확인 필요
+  announceTooEarly: `매칭 결과발표는 ${MIN_ANNOUNCE_TIME} 이후로 설정해 주세요`,
 };
-
-// TODO: 매칭 일정 저장 API 연동 후 제거 (저장 중 버튼 로딩 확인용)
-const MOCK_SAVE_DELAY = 600;
 
 const ROUND_TITLE: Record<ScheduleRound, string> = {
   1: '1차 지원 기간',
@@ -64,18 +67,15 @@ const ROUND_PLACEHOLDERS = ([1, 2, 3, 'RANDOM'] as const).map((round) => ({
   period: null,
 }));
 
-type Schedules = typeof MOCK_MATCHING_SCHEDULES;
+const EMPTY_SETTING: MatchingScheduleSetting = { startDate: null, announceTime: null };
+
+// 고친 값과 고치기 전 값을 같이 둠 (다른 지부 일정을 다시 불러오지 않고도 저장 안 한 변경을 알 수 있게)
+type Draft = { base: MatchingScheduleSetting; value: MatchingScheduleSetting };
+
+const toKey = (chapterId: number, track: MatchingTrack) => `${chapterId}-${track}`;
 
 const isSameSetting = (left: MatchingScheduleSetting, right: MatchingScheduleSetting) =>
   left.startDate === right.startDate && left.announceTime === right.announceTime;
-
-// 저장하지 않은 지부 · 탭이 하나라도 있는지
-const hasUnsavedChanges = (drafts: Schedules, saved: Schedules) =>
-  Object.keys(drafts).some((chapterId) =>
-    TRACK_ITEMS.some(
-      ({ value }) => !isSameSetting(drafts[chapterId][value], saved[chapterId][value]),
-    ),
-  );
 
 // 다 입력했는데 올바르지 않은 값만 에러로 표시 (입력 중에는 표시하지 않음)
 const isInvalidDate = (value: string | null) => value?.length === 10 && !parseDate(value);
@@ -83,47 +83,63 @@ const isInvalidTime = (value: string | null) => value?.length === 5 && !isValidT
 
 // 피그마 매칭 차수 설정: Plan - Design / Plan - PE 탭 + 01 기본 매칭 일정 + 02 차수별 일정 설정
 const MatchingRoundsPage = () => {
-  const ownChapterId = useSessionStore((state) => state.session.chapterId);
+  const ownChapterId = useSessionStore((state) => state.session.serverChapterId);
   const { chapterScope, editable } = useMatchingScheduleAccess();
   const toast = useAppToast();
   const [now] = useState(() => new Date());
 
-  const [chapterId, setChapterId] = useState(
-    () => MOCK_CHAPTERS.find(({ id }) => id === ownChapterId)?.id ?? MOCK_CHAPTERS[0].id,
-  );
+  const gisuId = useSessionStore((state) => state.session.gisuId);
+  const { data: chapters = [], isError: chaptersError } = useChapters(gisuId);
+
+  // 고르기 전: 지부장은 소속 지부, 전 지부를 보는 역할(총괄단 · 슈퍼어드민 · 중앙 운영진)은 첫 지부
+  const defaultChapterId = chapterScope === 'OWN' ? ownChapterId : (chapters[0]?.id ?? null);
+  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
+  const chapterId = selectedChapterId ?? defaultChapterId;
   const [track, setTrack] = useState<MatchingTrack>('PLAN_DESIGN');
-  // TODO: 매칭 일정 API 연동. 지금은 화면에서만 저장
-  const [saved, setSaved] = useState<Schedules>(MOCK_MATCHING_SCHEDULES);
-  const [drafts, setDrafts] = useState<Schedules>(MOCK_MATCHING_SCHEDULES);
+
+  const rounds = useMatchingRounds(chapterId ?? undefined);
+  const serverSchedules = rounds.data ? toScheduleByTrack(rounds.data) : null;
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const save = useSaveMatchingSchedule();
 
   // 저장 완료 후 다시 고치기 전까지 버튼을 '저장 완료'로 둠 (피그마 버튼 플로우)
-  const [savingKey, setSavingKey] = useState<string | null>(null);
   const [savedKey, setSavedKey] = useState<string | null>(null);
   const [savedDialogOpen, setSavedDialogOpen] = useState(false);
 
-  const currentKey = `${chapterId}-${track}`;
-  const savedSetting = saved[chapterId][track];
-  const draft = drafts[chapterId][track];
-  const schedule = calculateSchedule(draft);
-  // 1차 매칭이 시작되면 일정을 바꿀 수 없음 (저장된 일정 기준)
-  const canEdit = editable && !isScheduleLocked(savedSetting, now);
+  const currentKey = chapterId === null ? null : toKey(chapterId, track);
+  const savedSetting = serverSchedules?.[track].setting ?? EMPTY_SETTING;
+  const draft = (currentKey !== null ? drafts[currentKey]?.value : undefined) ?? savedSetting;
   const dirty = !isSameSetting(draft, savedSetting);
-  const saving = savingKey === currentKey;
+  // 서버 일정 그대로면 서버 값을 보여 주고, 고치는 중이면 시작일로 계산
+  const schedule =
+    !dirty && serverSchedules ? serverSchedules[track].schedule : calculateSchedule(draft);
+  // 일정을 불러온 뒤에만 수정 가능. 1차 매칭이 시작되면 일정을 바꿀 수 없음 (저장된 일정 기준)
+  const canEdit = editable && rounds.isSuccess && !isScheduleLocked(savedSetting, now);
+  const saving =
+    save.isPending && save.variables?.chapterId === chapterId && save.variables.track === track;
   const showSaved = savedKey === currentKey && !dirty;
 
   // 저장하지 않고 다른 페이지로 가면 확인 (새로고침 · 탭 닫기는 브라우저 기본 확인)
-  const unsaved = hasUnsavedChanges(drafts, saved);
+  const unsaved = Object.values(drafts).some(({ base, value }) => !isSameSetting(base, value));
   const blocker = useBlocker({
     shouldBlockFn: () => unsaved,
     enableBeforeUnload: unsaved,
     withResolver: true,
   });
 
-  const updateDraft = (patch: Partial<MatchingScheduleSetting>) =>
-    setDrafts((prev) => ({
-      ...prev,
-      [chapterId]: { ...prev[chapterId], [track]: { ...prev[chapterId][track], ...patch } },
-    }));
+  const updateDraft = (patch: Partial<MatchingScheduleSetting>) => {
+    if (currentKey === null) return;
+    setDrafts((prev) => {
+      const current = prev[currentKey];
+      return {
+        ...prev,
+        [currentKey]: {
+          base: current?.base ?? savedSetting,
+          value: { ...(current?.value ?? savedSetting), ...patch },
+        },
+      };
+    });
+  };
 
   // 자동 계산 칸은 시작일을 넣어야 채워짐
   const handleDisabledFieldClick = () => {
@@ -137,17 +153,26 @@ const MatchingRoundsPage = () => {
       toast.show(TOAST_MESSAGE.incomplete, { color: 'error' });
       return;
     }
-    // TODO: 매칭 일정 저장 API 연동. 지금은 화면에서만 저장
+    if (!isAnnounceTimeAllowed(draft.announceTime)) {
+      toast.show(TOAST_MESSAGE.announceTooEarly, { color: 'error' });
+      return;
+    }
+    if (chapterId === null || currentKey === null || !rounds.data) return;
+
     const key = currentKey;
-    const setting = draft;
-    setSavingKey(key);
-    window.setTimeout(() => {
-      setSaved((prev) => ({ ...prev, [chapterId]: { ...prev[chapterId], [track]: setting } }));
-      setSavingKey(null);
-      setSavedKey(key);
-      setSavedDialogOpen(true);
-      toast.show(TOAST_MESSAGE.saved);
-    }, MOCK_SAVE_DELAY);
+    save.mutate(
+      { chapterId, track, setting: draft, existingRounds: rounds.data },
+      {
+        // 저장한 일정을 다시 불러온 뒤라 고친 값을 지워도 저장한 값이 보임
+        onSuccess: () => {
+          setDrafts(({ [key]: _saved, ...rest }) => rest);
+          setSavedKey(key);
+          setSavedDialogOpen(true);
+          toast.show(TOAST_MESSAGE.saved);
+        },
+        onError: (error) => toast.show(error.message, { color: 'error' }),
+      },
+    );
   };
 
   return (
@@ -176,10 +201,16 @@ const MatchingRoundsPage = () => {
             <section className="flex flex-col gap-4">
               <SectionHeader number="01" title="기본 매칭 일정" />
               <div className="flex flex-col gap-[22px] pl-[34px]">
+                {/* TODO: 불러오기 실패 화면이 피그마에 나오면 교체 */}
+                {(chaptersError || rounds.isError) && (
+                  <p role="alert" className="text-body-3-medium text-red-500">
+                    매칭 일정을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+                  </p>
+                )}
                 <ScheduleChapterField
-                  chapters={MOCK_CHAPTERS}
+                  chapters={chapters}
                   value={chapterId}
-                  onValueChange={setChapterId}
+                  onValueChange={setSelectedChapterId}
                   onlyChapterId={chapterScope === 'OWN' ? ownChapterId : undefined}
                   onBlockedClick={() => toast.show(TOAST_MESSAGE.otherChapter, { color: 'error' })}
                 />
@@ -206,7 +237,8 @@ const MatchingRoundsPage = () => {
 
             <section className="flex flex-col gap-4">
               <SectionHeader number="02" title="차수별 일정 설정" />
-              <div className="flex items-start gap-10 pl-4">
+              {/* 달력 옆에 자리가 없으면 차수별 기간을 달력 아래로 내림 */}
+              <div className="flex flex-wrap items-start gap-10 pl-4">
                 <ScheduleCalendar
                   // 시작일이 바뀌면 달력도 그 달로 이동
                   key={`${chapterId}-${track}-${schedule?.overall.start.date ?? ''}`}

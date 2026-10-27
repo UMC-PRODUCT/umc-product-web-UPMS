@@ -12,8 +12,14 @@ import {
 } from '../lib/access';
 import type { Session, View } from './types';
 
-// TODO: 사용자 정보 API가 나오면 실제 데이터로 교체. 지금은 권한별 화면 확인용 mock.
-const MOCK_SESSION: Session = { role: 'SUPER_ADMIN', challengerType: null, chapterId: 'axolotl' };
+// 루트 라우트에서 내 정보를 불러와 채우기 전 값 (가장 낮은 권한)
+const INITIAL_SESSION: Session = {
+  role: 'CHALLENGER',
+  challengerType: null,
+  chapterId: null,
+  serverChapterId: null,
+  gisuId: null,
+};
 
 type SessionState = {
   session: Session;
@@ -23,7 +29,7 @@ type SessionState = {
 };
 
 export const useSessionStore = create<SessionState>()((set) => ({
-  session: MOCK_SESSION,
+  session: INITIAL_SESSION,
   view: 'ADMIN',
   setSession: (session) => set({ session, view: 'ADMIN' }),
   setView: (view) => set({ view }),

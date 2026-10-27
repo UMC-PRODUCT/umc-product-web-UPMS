@@ -20,7 +20,7 @@ const OverallScheduleField = ({
   onDisabledClick,
 }: OverallScheduleFieldProps) => (
   <ScheduleFieldRow label="전체 매칭 일정">
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <DateTimeField
         type="date"
         prefix="시작"
