@@ -1,4 +1,4 @@
-import { InputBox } from '@umc-product/react';
+import { TextFieldBoxField } from '@umc-product/react';
 
 export type DateTimeFieldType = 'date' | 'time';
 
@@ -37,7 +37,7 @@ const DateTimeField = ({
   const disabled = !onValueChange;
 
   return (
-    <InputBox
+    <TextFieldBoxField
       size="md"
       disabled={disabled}
       invalid={invalid}
@@ -52,7 +52,7 @@ const DateTimeField = ({
       )}
       <input
         // 비활성 입력은 클릭 이벤트가 생기지 않아서, 클릭이 상자로 가도록 함
-        className="umc-input-box__input [field-sizing:content] disabled:pointer-events-none"
+        className="umc-text-field-box-field__input [field-sizing:content] disabled:pointer-events-none"
         inputMode="numeric"
         aria-label={ariaLabel}
         aria-invalid={invalid || undefined}
@@ -62,7 +62,7 @@ const DateTimeField = ({
         maxLength={type === 'date' ? 10 : 5}
         onChange={(event) => onValueChange?.(formatValue(event.target.value))}
       />
-    </InputBox>
+    </TextFieldBoxField>
   );
 };
 

@@ -3,3 +3,4 @@ node_modules
 package-lock.json
 src/routes/routeTree.gen.ts
 src/types/api.d.ts
+openapi
