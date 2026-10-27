@@ -28,5 +28,7 @@ export const isValidTime = (value: string | null) => /^([01]\d|2[0-3]):[0-5]\d$/
 export const toDateString = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
+export const toTimeString = (date: Date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
 export const addDays = (date: Date, amount: number) =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount);
