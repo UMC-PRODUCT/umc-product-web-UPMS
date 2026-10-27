@@ -7,6 +7,7 @@ import {
   canManageNotice,
   getApplicationsView,
   getMatchingScheduleAccess,
+  getProjectRegisterAccess,
   getProjectSettingsAccess,
 } from '../lib/access';
 import type { Session, View } from './types';
@@ -30,6 +31,10 @@ export const useSessionStore = create<SessionState>()((set) => ({
 
 export const useProjectSettingsAccess = () =>
   useSessionStore((state) => getProjectSettingsAccess(state.session.role, state.view));
+
+// 프로젝트 등록 페이지 접근 수준 (중앙운영은 조회만이라 NONE)
+export const useProjectRegisterAccess = () =>
+  useSessionStore((state) => getProjectRegisterAccess(state.session.role, state.view));
 
 export const useApplicationsView = () =>
   useSessionStore((state) => getApplicationsView(state.session.role, state.view));
@@ -68,6 +73,11 @@ export const useMatchingScheduleAccess = () =>
   useSessionStore(useShallow((state) => getMatchingScheduleAccess(state.session.role)));
 
 // 라우트 beforeLoad처럼 React 밖에서 권한을 확인할 때 사용
+export const getProjectRegisterAccessSnapshot = () => {
+  const { session, view } = useSessionStore.getState();
+  return getProjectRegisterAccess(session.role, view);
+};
+
 export const getProjectSettingsAccessSnapshot = () => {
   const { session, view } = useSessionStore.getState();
   return getProjectSettingsAccess(session.role, view);

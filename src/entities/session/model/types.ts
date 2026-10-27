@@ -22,5 +22,8 @@ export type View = 'ADMIN' | 'PM_CHALLENGER' | 'CHALLENGER';
 // 사이드바 '프로젝트 설정' 메뉴 접근 수준
 export type ProjectSettingsAccess = 'FULL' | 'BASIC' | 'NONE';
 
+// 프로젝트 등록 페이지 접근 수준. ADMIN: 마스터 · 지부장(PM을 골라 등록) / PM: 본인 프로젝트 등록 / NONE: 접근 불가
+export type ProjectRegisterAccess = 'ADMIN' | 'PM' | 'NONE';
+
 // 지원 현황에서 조회할 수 있는 지부 범위
 export type ChapterScope = 'ALL' | 'OWN';
