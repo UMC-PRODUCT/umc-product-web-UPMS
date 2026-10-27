@@ -1,4 +1,4 @@
-import { ImageThumbnail, Tag } from '@umc-product/react';
+import { GuidanceMessage, ImageThumbnail, Tag } from '@umc-product/react';
 import type { ReactNode } from 'react';
 
 type RecruitStatus = 'RECRUITING' | 'CLOSED';
@@ -19,6 +19,7 @@ type ProjectCardProps = {
   description: string; // 200자 이내, 말줄임 없이 전문 표시
   recruitments: ProjectCardRecruitment[];
   actions?: ReactNode; // 하단 버튼 영역. 화면마다 버튼 구성이 달라 밖에서 넘김
+  actionNotice?: string; // 버튼 아래 안내 문구 (예: 버튼이 비활성인 이유)
   className?: string;
 };
 
@@ -37,6 +38,7 @@ const ProjectCard = ({
   description,
   recruitments,
   actions,
+  actionNotice,
   className = '',
 }: ProjectCardProps) => (
   <article
@@ -81,7 +83,12 @@ const ProjectCard = ({
           })}
         </ul>
       </div>
-      {actions && <div className="flex items-start gap-2.5">{actions}</div>}
+      {actions && (
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex w-full items-start gap-2.5">{actions}</div>
+          {actionNotice && <GuidanceMessage color="neutral">{actionNotice}</GuidanceMessage>}
+        </div>
+      )}
     </div>
   </article>
 );
