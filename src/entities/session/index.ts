@@ -1,6 +1,7 @@
 export {
   canEditApplicantStatus,
   canManageMatching,
+  canManageNotice,
   getApplicationsView,
   getChapterScope,
   getMatchingScheduleAccess,
@@ -9,10 +10,12 @@ export {
   type ViewOption,
 } from './lib/access';
 export {
+  getCanManageNoticeSnapshot,
   getProjectSettingsAccessSnapshot,
   useApplicationsView,
   useCanEditApplicantStatus,
   useCanManageMatching,
+  useCanManageNotice,
   useMatchingScheduleAccess,
   useProjectSettingsAccess,
   useSessionStore,
