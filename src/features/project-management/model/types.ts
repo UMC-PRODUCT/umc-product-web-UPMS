@@ -21,6 +21,7 @@ export type ManagedProject = {
   thumbnailUrl: string | null;
   pmName: string;
   schoolName: string;
+  description: string;
   status: ProjectStatus;
   platform: ProjectPlatform;
   recruitments: PartRecruitment[];
