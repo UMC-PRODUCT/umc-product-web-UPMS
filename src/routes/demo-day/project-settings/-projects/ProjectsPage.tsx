@@ -1,10 +1,16 @@
-import { AddIcon } from '@umc-product/icons';
-import { Button, PageHeader } from '@umc-product/react';
-import { useState } from 'react';
+import { AddIcon, UsersPictogram } from '@umc-product/icons';
+import { Button, Dimmed, PageHeader } from '@umc-product/react';
+import { Dialog } from 'radix-ui';
+import { type ReactNode, useState } from 'react';
 
 import { type Role, useSessionStore, type View } from '@/entities/session';
 import { ChapterSelectHeader, useVisibleChapters } from '@/features/chapter-select';
-import { ProjectManagementCard } from '@/features/project-management';
+import {
+  type ManagedProject,
+  ProjectManagementCard,
+  type RecruitPart,
+} from '@/features/project-management';
+import ProjectCard from '@/widgets/card/projectCard';
 
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
 import { MOCK_PM_PROJECTS, MOCK_PROJECTS } from './mock';
@@ -15,6 +21,114 @@ const BREADCRUMBS = [
   { label: '프로젝트 관리' },
 ];
 
+const PART_LABEL: Record<RecruitPart, string> = {
+  DESIGN: 'Design',
+  WEB_PE: 'Web PE',
+  MOBILE_PE: 'Mobile PE',
+};
+
+// 프로젝트 카드 팝업 하단 버튼 반환 함수
+const getProjectDetailActions = (
+  role: Role,
+  view: View,
+  project: ManagedProject,
+  ownChapterId: string,
+  isApplicationPeriod: boolean,
+  isMatchingPeriod: boolean,
+): ReactNode => {
+  const usersButton = (
+    <Button
+      variant="weak"
+      color="neutral"
+      size="md"
+      icon={<UsersPictogram size={30} color="var(--color-icon-subtle)" />}
+      aria-label="팀원 현황"
+    />
+  );
+
+  const planButton = (
+    <Button variant="weak" size="md" className="flex-1">
+      기획 보기
+    </Button>
+  );
+
+  const recruitButton = (
+    <Button size="md" className="flex-1">
+      모집 문항 보기
+    </Button>
+  );
+
+  const recruitButtonDisabled = (
+    <Button size="md" className="flex-1" disabled>
+      모집 문항 보기
+    </Button>
+  );
+
+  // 지원 기간: 모든 역할·지부에 관계없이 기획 보기 + 모집 문항 보기
+  if (isApplicationPeriod) {
+    return (
+      <>
+        {planButton}
+        {recruitButton}
+      </>
+    );
+  }
+
+  // PM 챌린저 - 자신의 프로젝트만 조회하므로 기획 보기 + 프로젝트 수정하기
+  if (view === 'PM_CHALLENGER') {
+    return (
+      <>
+        {usersButton}
+        {planButton}
+        <Button size="md" className="flex-1">
+          프로젝트 수정하기
+        </Button>
+      </>
+    );
+  }
+
+  // 매칭 기간 (어드민): 기획 보기 + 모집 문항 보기(비활성화)
+  if (isMatchingPeriod) {
+    return (
+      <>
+        {planButton}
+        {recruitButtonDisabled}
+      </>
+    );
+  }
+
+  // 기본 - Admin(중앙), SUPER_ADMIN, 소속 지부 지부장
+  if (
+    role === 'HQ_ADMIN' ||
+    role === 'SUPER_ADMIN' ||
+    (role === 'HQ_LEAD' && project.chapterId === ownChapterId)
+  ) {
+    return (
+      <>
+        {usersButton}
+        {planButton}
+        <Button size="md" className="flex-1">
+          프로젝트 수정하기
+        </Button>
+      </>
+    );
+  }
+
+  // 기본 - 타 지부 지부장, 학교 운영진(CHAPTER_ADMIN)
+  if (role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN') {
+    return (
+      <>
+        {usersButton}
+        {planButton}
+        {recruitButton}
+      </>
+    );
+  }
+
+  return planButton;
+};
+
+// 프로젝트 관리 워딩 반환 함수
 const getDescription = (role: Role, view: View): string => {
   if (view === 'PM_CHALLENGER') {
     return '내 프로젝트를 등록하고 수정하거나, 매칭 현황을 확인할 수 있어요. 팀 매칭 진행 중에는 프로젝트를 수정할 수 없어요.';
@@ -29,9 +143,7 @@ const getDescription = (role: Role, view: View): string => {
   return '전체 지부의 프로젝트 정보를 확인하고 수정할 수 있어요. 팀 매칭 진행 중에는 프로젝트를 수정할 수 없어요.';
 };
 
-// 중앙운영진(HQ_ADMIN)은 조회 전용 → 등록 버튼 미노출
-const canRegisterProject = (role: Role) => role !== 'HQ_ADMIN';
-
+// 프로젝트 없을 시
 const EmptyState = ({ showRegisterButton }: { showRegisterButton: boolean }) => (
   <div className="flex flex-col items-center gap-6 py-20">
     <EmptyDocumentIcon width={56} height={56} className="text-teal-grey-200" />
@@ -60,6 +172,12 @@ const ProjectsPage = () => {
   const [chapterId, setChapterId] = useState(
     () => chapters.find((c) => c.id === ownChapterId)?.id ?? chapters[0]?.id ?? '',
   );
+  const [selectedProject, setSelectedProject] = useState<ManagedProject | null>(null);
+
+  // TODO: API 연동 - 현재 지원 기간 여부
+  const isApplicationPeriod = false;
+  // TODO: API 연동 - 현재 매칭 기간 여부
+  const isMatchingPeriod = false;
 
   const isPmChallenger = view === 'PM_CHALLENGER';
 
@@ -82,7 +200,7 @@ const ProjectsPage = () => {
           {!isPmChallenger && (
             <ChapterSelectHeader value={chapterId} onValueChange={setChapterId} />
           )}
-          {canRegisterProject(role) && (
+          {role !== 'HQ_ADMIN' && (
             <Button size="sm" className="ml-auto h-11 shrink-0">
               <div className="flex items-center gap-2">
                 <AddIcon size={16} />
@@ -105,6 +223,8 @@ const ProjectsPage = () => {
                   role={role}
                   ownChapterId={ownChapterId ?? ''}
                   isPmChallenger
+                  isMatchingPeriod={isMatchingPeriod}
+                  onCardClick={() => setSelectedProject(project)}
                 />
               </li>
             ))}
@@ -126,6 +246,9 @@ const ProjectsPage = () => {
                               project={project}
                               role={role}
                               ownChapterId={ownChapterId ?? ''}
+                              isApplicationPeriod={isApplicationPeriod}
+                              isMatchingPeriod={isMatchingPeriod}
+                              onCardClick={() => setSelectedProject(project)}
                             />
                           </li>
                         ))}
@@ -142,6 +265,9 @@ const ProjectsPage = () => {
                               project={project}
                               role={role}
                               ownChapterId={ownChapterId ?? ''}
+                              isApplicationPeriod={isApplicationPeriod}
+                              isMatchingPeriod={isMatchingPeriod}
+                              onCardClick={() => setSelectedProject(project)}
                             />
                           </li>
                         ))}
@@ -154,6 +280,53 @@ const ProjectsPage = () => {
           </div>
         )}
       </div>
+
+      <Dialog.Root
+        open={selectedProject !== null}
+        onOpenChange={(open) => !open && setSelectedProject(null)}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay asChild>
+            <Dimmed />
+          </Dialog.Overlay>
+          {selectedProject && (
+            <Dialog.Content
+              aria-describedby={undefined}
+              onOpenAutoFocus={(event) => {
+                event.preventDefault();
+                (event.currentTarget as HTMLElement).focus();
+              }}
+              className="fixed top-1/2 left-1/2 z-(--umc-z-dimmed) -translate-x-1/2 -translate-y-1/2 outline-none"
+            >
+              <div className="relative">
+                <Dialog.Title className="sr-only">{selectedProject.projectName}</Dialog.Title>
+                <ProjectCard
+                  projectName={selectedProject.projectName}
+                  logoUrl={selectedProject.logoUrl}
+                  thumbnailUrl={selectedProject.thumbnailUrl}
+                  pmName={selectedProject.pmName}
+                  schoolName={selectedProject.schoolName}
+                  description={selectedProject.description}
+                  recruitments={selectedProject.recruitments.map((r) => ({
+                    label: PART_LABEL[r.part],
+                    applied: r.applied,
+                    capacity: r.capacity,
+                    status: r.status,
+                  }))}
+                  actions={getProjectDetailActions(
+                    role,
+                    view,
+                    selectedProject,
+                    ownChapterId ?? '',
+                    isApplicationPeriod,
+                    isMatchingPeriod,
+                  )}
+                />
+              </div>
+            </Dialog.Content>
+          )}
+        </Dialog.Portal>
+      </Dialog.Root>
     </main>
   );
 };
