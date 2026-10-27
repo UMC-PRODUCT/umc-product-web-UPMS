@@ -1,6 +1,6 @@
-import { AddIcon, UsersPictogram } from '@umc-product/icons';
-import { Button, Dimmed, PageHeader } from '@umc-product/react';
-import { Dialog } from 'radix-ui';
+import { AddIcon, UsersPictogram, WarningTriangleIcon } from '@umc-product/icons';
+import { Button, Dialog, Dimmed, PageHeader } from '@umc-product/react';
+import { Dialog as RadixDialog } from 'radix-ui';
 import { type ReactNode, useState } from 'react';
 
 import { type Role, useSessionStore, type View } from '@/entities/session';
@@ -11,6 +11,7 @@ import {
   type RecruitPart,
 } from '@/features/project-management';
 import ProjectCard from '@/widgets/card/projectCard';
+import { useAppToast } from '@/widgets/toast';
 
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
 import { MOCK_PM_PROJECTS, MOCK_PROJECTS } from './mock';
@@ -173,6 +174,9 @@ const ProjectsPage = () => {
     () => chapters.find((c) => c.id === ownChapterId)?.id ?? chapters[0]?.id ?? '',
   );
   const [selectedProject, setSelectedProject] = useState<ManagedProject | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ManagedProject | null>(null);
+  const [deletedProjectIds, setDeletedProjectIds] = useState<string[]>([]);
+  const toast = useAppToast();
 
   // TODO: API 연동 - 현재 지원 기간 여부
   const isApplicationPeriod = false;
@@ -182,9 +186,17 @@ const ProjectsPage = () => {
   const isPmChallenger = view === 'PM_CHALLENGER';
 
   // TODO: API 연동 (PM 챌린저: 본인 프로젝트 / 어드민: 지부별 프로젝트 목록)
-  const projects = isPmChallenger
+  const allProjects = isPmChallenger
     ? MOCK_PM_PROJECTS
     : MOCK_PROJECTS.filter((p) => p.chapterId === chapterId);
+  const projects = allProjects.filter((p) => !deletedProjectIds.includes(p.projectId));
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return;
+    setDeletedProjectIds((prev) => [...prev, deleteTarget.projectId]);
+    setDeleteTarget(null);
+    toast.show('프로젝트가 삭제됐어요.', { color: 'error' });
+  };
 
   return (
     <main className="flex flex-col items-start gap-8 px-8 pt-12 pb-20">
@@ -225,6 +237,7 @@ const ProjectsPage = () => {
                   isPmChallenger
                   isMatchingPeriod={isMatchingPeriod}
                   onCardClick={() => setSelectedProject(project)}
+                  onDelete={() => setDeleteTarget(project)}
                 />
               </li>
             ))}
@@ -249,6 +262,7 @@ const ProjectsPage = () => {
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
+                              onDelete={() => setDeleteTarget(project)}
                             />
                           </li>
                         ))}
@@ -268,6 +282,7 @@ const ProjectsPage = () => {
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
+                              onDelete={() => setDeleteTarget(project)}
                             />
                           </li>
                         ))}
@@ -281,16 +296,16 @@ const ProjectsPage = () => {
         )}
       </div>
 
-      <Dialog.Root
+      <RadixDialog.Root
         open={selectedProject !== null}
         onOpenChange={(open) => !open && setSelectedProject(null)}
       >
-        <Dialog.Portal>
-          <Dialog.Overlay asChild>
+        <RadixDialog.Portal>
+          <RadixDialog.Overlay asChild>
             <Dimmed />
-          </Dialog.Overlay>
+          </RadixDialog.Overlay>
           {selectedProject && (
-            <Dialog.Content
+            <RadixDialog.Content
               aria-describedby={undefined}
               onOpenAutoFocus={(event) => {
                 event.preventDefault();
@@ -299,7 +314,9 @@ const ProjectsPage = () => {
               className="fixed top-1/2 left-1/2 z-(--umc-z-dimmed) -translate-x-1/2 -translate-y-1/2 outline-none"
             >
               <div className="relative">
-                <Dialog.Title className="sr-only">{selectedProject.projectName}</Dialog.Title>
+                <RadixDialog.Title className="sr-only">
+                  {selectedProject.projectName}
+                </RadixDialog.Title>
                 <ProjectCard
                   projectName={selectedProject.projectName}
                   logoUrl={selectedProject.logoUrl}
@@ -323,10 +340,28 @@ const ProjectsPage = () => {
                   )}
                 />
               </div>
-            </Dialog.Content>
+            </RadixDialog.Content>
           )}
-        </Dialog.Portal>
-      </Dialog.Root>
+        </RadixDialog.Portal>
+      </RadixDialog.Root>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        color="error"
+        icon={<WarningTriangleIcon weight="fill" size={24} className="text-red-500" />}
+        title="프로젝트를 삭제할까요?"
+        description={
+          <>
+            삭제한 프로젝트는 복구할 수 없어요.
+            <br />
+            &apos;{deleteTarget?.projectName}&apos; 프로젝트를 삭제하시겠어요?
+          </>
+        }
+        cancelLabel="돌아가기"
+        confirmLabel="삭제하기"
+        onConfirm={handleDeleteConfirm}
+      />
     </main>
   );
 };
