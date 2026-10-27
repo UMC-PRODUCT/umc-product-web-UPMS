@@ -1,4 +1,4 @@
-import type { Role, View } from '../model/types';
+import type { ProjectRegisterAccess, Role, View } from '../model/types';
 import {
   canEditApplicantStatus,
   canManageMatching,
@@ -6,6 +6,7 @@ import {
   getApplicationsView,
   getChapterScope,
   getMatchingScheduleAccess,
+  getProjectRegisterAccess,
   getProjectSettingsAccess,
   getViewOptions,
 } from './access';
@@ -167,4 +168,21 @@ describe('canManageNotice', () => {
       expect(canManageNotice(role, 'axolotl', 'axolotl')).toBe(false);
     },
   );
+});
+
+describe('getProjectRegisterAccess', () => {
+  it.each<[Role, View, ProjectRegisterAccess]>([
+    ['SUPER_ADMIN', 'ADMIN', 'ADMIN'],
+    ['HQ_LEAD', 'ADMIN', 'ADMIN'],
+    ['CHAPTER_ADMIN', 'ADMIN', 'ADMIN'],
+    ['HQ_ADMIN', 'ADMIN', 'NONE'],
+    ['SCHOOL_ADMIN', 'ADMIN', 'NONE'],
+    ['SCHOOL_STAFF', 'ADMIN', 'NONE'],
+    ['CHALLENGER_PM', 'ADMIN', 'PM'],
+    ['CHALLENGER', 'ADMIN', 'NONE'],
+    ['SUPER_ADMIN', 'PM_CHALLENGER', 'PM'],
+    ['CHAPTER_ADMIN', 'CHALLENGER', 'NONE'],
+  ])('%s의 %s 뷰는 프로젝트 등록 %s', (role, view, expected) => {
+    expect(getProjectRegisterAccess(role, view)).toBe(expected);
+  });
 });

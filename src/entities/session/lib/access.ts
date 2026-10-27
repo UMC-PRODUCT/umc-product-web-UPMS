@@ -1,4 +1,11 @@
-import type { ChapterScope, ProjectSettingsAccess, Role, Session, View } from '../model/types';
+import type {
+  ChapterScope,
+  ProjectRegisterAccess,
+  ProjectSettingsAccess,
+  Role,
+  Session,
+  View,
+} from '../model/types';
 
 const FULL_ACCESS_ROLES: Role[] = ['SUPER_ADMIN', 'HQ_LEAD', 'HQ_ADMIN', 'CHAPTER_ADMIN'];
 const BASIC_ACCESS_ROLES: Role[] = ['SCHOOL_ADMIN', 'SCHOOL_STAFF', 'CHALLENGER_PM'];
@@ -99,6 +106,16 @@ export const getProjectSettingsAccess = (role: Role, view: View): ProjectSetting
 
   if (FULL_ACCESS_ROLES.includes(role)) return 'FULL';
   if (BASIC_ACCESS_ROLES.includes(role)) return 'BASIC';
+  return 'NONE';
+};
+
+// 프로젝트 등록: 마스터(SUPER_ADMIN · HQ_LEAD)는 전 지부, 지부장은 본인 지부 PM으로 등록하고, PM은 본인 프로젝트를 등록
+// 중앙운영(HQ_ADMIN)은 프로젝트 조회만 가능해 등록 · 수정 · 삭제 · 승인이 모두 막힘
+export const getProjectRegisterAccess = (role: Role, view: View): ProjectRegisterAccess => {
+  const applicationsView = getApplicationsView(role, view);
+  if (applicationsView === 'PM_CHALLENGER') return 'PM';
+  if (applicationsView === 'CHALLENGER') return 'NONE';
+  if (role === 'SUPER_ADMIN' || role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN') return 'ADMIN';
   return 'NONE';
 };
 
