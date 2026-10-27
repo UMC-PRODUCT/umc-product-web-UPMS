@@ -27,7 +27,8 @@ const queryClient = new QueryClient({
   }),
 });
 
-const router = createRouter({ routeTree });
+// 루트 라우트 beforeLoad에서 내 정보를 미리 불러올 수 있도록 queryClient를 넘김
+const router = createRouter({ routeTree, context: { queryClient } });
 
 declare module '@tanstack/react-router' {
   interface Register {

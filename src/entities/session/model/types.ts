@@ -14,7 +14,10 @@ export type ChallengerType = 'PM' | 'GENERAL';
 export type Session = {
   role: Role;
   challengerType: ChallengerType | null;
-  chapterId: string | null; // 소속 지부
+  // TODO: 지원 현황 · 매칭 현황 · 공지 화면이 서버 지부를 쓰게 되면 serverChapterId로 통합
+  chapterId: string | null; // 소속 지부 (mock 지부 ID, 아직 mock 데이터를 쓰는 화면용)
+  serverChapterId: number | null; // 소속 지부 (서버 지부 ID)
+  gisuId: number | null; // 현재 활성 기수 (지부 목록 등 기수별 조회에 씀)
 };
 
 export type View = 'ADMIN' | 'PM_CHALLENGER' | 'CHALLENGER';
