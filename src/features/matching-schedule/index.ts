@@ -1,4 +1,5 @@
 export { calculateSchedule, isScheduleLocked } from './model/calculateSchedule';
+export { getCurrentMatchingStep, type MatchingStep } from './model/getCurrentMatchingStep';
 export { MOCK_MATCHING_SCHEDULES } from './model/mockMatchingSchedules';
 export { isValidTime, parseDate } from './model/scheduleFormat';
 export type {
