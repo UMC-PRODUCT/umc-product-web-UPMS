@@ -86,6 +86,8 @@ const QuotaPage = () => {
   // 집계
   const partTotal = (part: string) =>
     projects.reduce((sum, p) => sum + (draft[String(p.projectId!)]?.[part] ?? 0), 0);
+  const partTotalAll = (part: string) =>
+    Number(data?.summary?.find((s) => s.part === part)?.allocatedQuota ?? 0);
   const partQuota = (part: string) =>
     Number(data?.filteredSummary?.find((s) => s.part === part)?.availableCount ?? 0);
 
@@ -157,7 +159,11 @@ const QuotaPage = () => {
           <SectionHeader title="파트별 인원 현황" />
           <div className="mt-3 flex gap-2.5">
             {columns.map((col) => (
-              <PartStatCard key={col.part} title={col.label ?? ''} count={partTotal(col.part!)} />
+              <PartStatCard
+                key={col.part}
+                title={col.label ?? ''}
+                count={partTotalAll(col.part!)}
+              />
             ))}
           </div>
         </section>
