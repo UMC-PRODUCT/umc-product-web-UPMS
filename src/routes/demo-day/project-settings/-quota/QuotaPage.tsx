@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ResetIcon } from '@umc-product/icons';
 import {
   Button,
@@ -16,6 +16,7 @@ import { useAppToast } from '@/widgets/toast';
 
 import type { ProjectRow } from './api/getPartQuotas';
 import { partQuotasQueryOptions } from './api/partQuotasQuery';
+import { savePartQuotas, type SavePartQuotasRequest } from './api/savePartQuotas';
 import PartStatCard from './PartStatCard';
 import QuotaTableFooter from './QuotaTableFooter';
 import QuotaTableRow from './QuotaTableRow';
@@ -60,6 +61,8 @@ const QuotaPage = () => {
 
   const columns = data?.columns ?? [];
   const projects = data?.projects ?? [];
+  const allColumnsLocked =
+    columns.length > 0 && columns.every((col) => col.canEdit?.allowed === false);
 
   // 테이블 편집 상태
   const [prevChapterId, setPrevChapterId] = useState<number | undefined>(undefined);
@@ -69,6 +72,20 @@ const QuotaPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const toast = useAppToast();
+  const queryClient = useQueryClient();
+
+  const { mutate: saveMutate, isPending: isSaving } = useMutation({
+    mutationFn: savePartQuotas,
+    onSuccess: () => {
+      setSaved(draft);
+      setEditingCell(null);
+      toast.show('저장되었어요.');
+      queryClient.invalidateQueries({ queryKey: ['part-quotas'] });
+    },
+    onError: (error: Error) => {
+      toast.show(error.message, { color: 'error' });
+    },
+  });
 
   // 지부 바뀔 때 draft 초기화 (render phase state update 패턴)
   if (data?.chapterId !== undefined && data.chapterId !== prevChapterId) {
@@ -115,21 +132,32 @@ const QuotaPage = () => {
   };
 
   const handleSave = () => {
+    if (!data?.chapterId) return;
+
     const totalDiff = columns.reduce(
       (sum, col) => sum + partTotal(col.part!) - partQuota(col.part!),
       0,
     );
-    if (totalDiff < 0) {
-      toast.show('전체 정원보다 배정 인원이 부족해요.', { color: 'error' });
-      return;
-    }
     if (totalDiff > 0) {
       toast.show('전체 정원보다 배정 인원이 많아요.', { color: 'error' });
       return;
     }
-    setSaved(draft);
-    setEditingCell(null);
-    toast.show('저장되었어요.');
+
+    type CellPart = SavePartQuotasRequest['projects'][0]['entries'][0]['part'];
+
+    const changedProjects = Object.entries(draft)
+      .map(([projectId, parts]) => {
+        const savedParts = saved[projectId] ?? {};
+        const entries = Object.entries(parts)
+          .filter(([part, quota]) => quota !== savedParts[part])
+          .map(([part, quota]) => ({ part: part as CellPart, quota }));
+        return entries.length > 0 ? { projectId: Number(projectId), entries } : null;
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+
+    if (changedProjects.length === 0) return;
+
+    saveMutate({ gisuId: gisuId ?? 0, chapterId: data.chapterId, projects: changedProjects });
   };
 
   const chapterItems = (data?.chapters ?? []).map((c) => ({
@@ -206,7 +234,7 @@ const QuotaPage = () => {
                 초기화
               </Button>
 
-              <Button size="sm" disabled={!canEdit} onClick={handleSave}>
+              <Button size="sm" disabled={isSaving || allColumnsLocked} onClick={handleSave}>
                 저장
               </Button>
             </div>
