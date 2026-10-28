@@ -1,17 +1,12 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
-import { useSessionStore } from '@/entities/session';
-
-import QuotaPage from './-quota/QuotaPage';
-
-const ALLOWED_ROLES = ['SUPER_ADMIN', 'HQ_LEAD', 'HQ_ADMIN', 'CHAPTER_ADMIN'];
+import { getProjectSettingsAccessSnapshot } from '@/entities/session';
 
 export const Route = createFileRoute('/demo-day/project-settings/quota')({
   beforeLoad: () => {
-    const { session } = useSessionStore.getState();
-    if (!ALLOWED_ROLES.includes(session.role)) {
+    if (getProjectSettingsAccessSnapshot() !== 'FULL') {
       throw redirect({ to: '/demo-day/team-matching/notice' });
     }
   },
-  component: QuotaPage,
+  component: () => <h1 className="p-8 text-3xl font-bold">프로젝트 TO 관리</h1>,
 });
