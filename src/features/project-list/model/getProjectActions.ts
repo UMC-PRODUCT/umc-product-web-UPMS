@@ -64,7 +64,10 @@ const getStaffPrimaryAction = ({
     (view === 'ADMIN' &&
       (role === 'SUPER_ADMIN' ||
         role === 'HQ_LEAD' ||
-        (role === 'CHAPTER_ADMIN' && chapterId !== null && chapterId === project.chapterId)));
+        (role === 'CHAPTER_ADMIN' &&
+          chapterId !== null &&
+          project.chapterId !== null &&
+          chapterId === project.chapterId)));
 
   if (period.phase === 'APPLY') return enabled('RECRUIT_QUESTIONS', '모집 문항 보기');
   if (canEdit) return enabled('EDIT_PROJECT', '프로젝트 수정하기');
@@ -79,7 +82,10 @@ const getChallengerPrimaryAction = ({
   period,
   viewer,
 }: GetProjectActionsParams): ProjectAction | null => {
-  if (chapterId === null || chapterId !== project.chapterId) return null;
+  // 프로젝트 지부를 모르면(null) 막지 않음. 지원 가능 여부는 서버가 최종 판단
+  if (chapterId === null || (project.chapterId !== null && chapterId !== project.chapterId)) {
+    return null;
+  }
   if (viewer.isMatched) return null;
 
   if (viewer.appliedProjectId === project.projectId) {
