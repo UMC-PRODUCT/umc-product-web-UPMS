@@ -1,14 +1,14 @@
 import { OptionButtonGroup } from '@umc-product/react';
 
-import type { Chapter } from '@/entities/chapter';
+import type { ChapterSummary } from '@/entities/chapter';
 
 import ScheduleFieldRow from './ScheduleFieldRow';
 
 type ScheduleChapterFieldProps = {
-  chapters: Chapter[];
-  value: string;
-  onValueChange: (chapterId: string) => void;
-  onlyChapterId?: string | null; // 지부장: 소속 지부만 고를 수 있고 나머지는 비활성
+  chapters: ChapterSummary[];
+  value: number | null; // 지부 목록을 불러오기 전이면 null
+  onValueChange: (chapterId: number) => void;
+  onlyChapterId?: number | null; // 지부장: 소속 지부만 고를 수 있고 나머지는 비활성
   onBlockedClick?: () => void; // 비활성 지부를 눌렀을 때 (피그마: 안내 토스트)
 };
 
@@ -34,13 +34,14 @@ const ScheduleChapterField = ({
       <OptionButtonGroup
         aria-label="지부 선택"
         size="sm"
+        // 옵션 값은 문자열이라 숫자 지부 ID를 바꿔서 넘김
         options={chapters.map(({ id, name }) => ({
-          value: id,
+          value: String(id),
           label: name,
-          disabled: Boolean(onlyChapterId) && id !== onlyChapterId,
+          disabled: onlyChapterId !== undefined && id !== onlyChapterId,
         }))}
-        value={value}
-        onValueChange={onValueChange}
+        value={value === null ? null : String(value)}
+        onValueChange={(chapterId) => onValueChange(Number(chapterId))}
       />
     </div>
   </ScheduleFieldRow>

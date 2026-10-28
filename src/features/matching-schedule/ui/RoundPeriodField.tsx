@@ -26,7 +26,7 @@ const RoundPeriodField = ({
 }: RoundPeriodFieldProps) => (
   <div className="flex flex-col items-start gap-2">
     <p className="text-title-3-medium font-semibold text-teal-600">{title}</p>
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-1.5">
         <DateTimeField
           type="date"
