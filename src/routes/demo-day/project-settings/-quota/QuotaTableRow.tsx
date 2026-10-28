@@ -71,6 +71,14 @@ const QuotaTableRow = ({
                 className="w-full bg-transparent text-center text-[18px] leading-[1.4] font-semibold tracking-[-0.36px] text-teal-500 focus:outline-none"
                 value={values[part] === 0 ? '' : values[part]}
                 onChange={(e) => onCellChange(projectId, part, e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    !/^\d$/.test(e.key) &&
+                    !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
                 onBlur={onCellBlur}
               />
             </td>
@@ -92,9 +100,7 @@ const QuotaTableRow = ({
       })}
 
       <td className="flex h-[60px] flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 border border-r-0 border-teal-grey-300 bg-[#F6F7F7]">
-        <span className="text-body-3-medium leading-normal text-teal-grey-500">
-          {project.schoolName}
-        </span>
+        <span className="text-body-3-medium leading-normal text-teal-grey-500">팀 배정 인원</span>
         <div className="flex items-start gap-0.5 text-[18px] leading-[1.4]">
           <span className="font-semibold tracking-[-0.36px] text-teal-600">{total}</span>
           <span className="font-medium text-teal-grey-500">명</span>
