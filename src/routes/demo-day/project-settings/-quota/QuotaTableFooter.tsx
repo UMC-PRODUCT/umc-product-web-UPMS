@@ -1,54 +1,58 @@
-import { type Part, PARTS } from './types';
+import type { Column } from './api/getPartQuotas';
 
 type Props = {
-  partTotal: (part: Part) => number;
-  partQuota: (part: Part) => number;
+  columns: Column[];
+  partTotal: (part: string) => number;
+  partQuota: (part: string) => number;
 };
 
-const QuotaTableFooter = ({ partTotal, partQuota }: Props) => {
-  const totalDiff = PARTS.reduce((sum, p) => sum + partTotal(p) - partQuota(p), 0);
+const QuotaTableFooter = ({ columns, partTotal, partQuota }: Props) => {
+  const totalDiff = columns.reduce(
+    (sum, col) => sum + partTotal(col.part!) - partQuota(col.part!),
+    0,
+  );
 
   return (
     <table className="w-full border-collapse">
       <tfoot>
         <tr className="flex">
-          <td className="flex w-[170px] shrink-0 items-center justify-center border-r border-teal-grey-300 bg-teal-50 py-4">
+          <td className="flex w-[170px] shrink-0 cursor-pointer items-center justify-center border-r border-teal-grey-300 bg-teal-50 py-4">
             <span className="text-[18px] leading-[1.4] font-semibold tracking-[-0.18px] text-teal-grey-900">
               지부 총 인원
             </span>
           </td>
-          {PARTS.map((part) => (
+          {columns.map((col) => (
             <td
-              key={part}
-              className="flex w-[186.75px] shrink-0 items-center justify-center gap-0.25 border-x border-teal-grey-300 bg-teal-50 py-4"
+              key={col.part}
+              className="flex w-[186.75px] shrink-0 cursor-pointer items-center justify-center gap-0.25 border-x border-teal-grey-300 bg-teal-50 py-4"
             >
               <span className="text-[18px] leading-[1.4] font-semibold tracking-[-0.36px] text-teal-600">
-                {partTotal(part)}
+                {partTotal(col.part!)}
               </span>
               <span className="text-title-3-medium text-teal-grey-500">명</span>
             </td>
           ))}
-          <td className="flex flex-1 items-center justify-center border-l border-teal-grey-300 bg-teal-100 py-4">
+          <td className="flex flex-1 cursor-pointer items-center justify-center border-l border-teal-grey-300 bg-teal-100 py-4">
             <div className="flex items-start gap-0.5 text-[18px] leading-[1.4]">
               <span className="font-semibold tracking-[-0.36px] text-teal-600">
-                총 {PARTS.reduce((sum, p) => sum + partTotal(p), 0)}
+                총 {columns.reduce((sum, col) => sum + partTotal(col.part!), 0)}
               </span>
               <span className="font-medium text-teal-grey-500">명</span>
             </div>
           </td>
         </tr>
         <tr className="flex">
-          <td className="flex w-[170px] shrink-0 items-center justify-center border-r border-teal-grey-300 bg-teal-grey-75 py-4">
+          <td className="flex w-[170px] shrink-0 cursor-pointer items-center justify-center border-r border-teal-grey-300 bg-teal-grey-75 py-4">
             <span className="text-[18px] leading-[1.4] font-semibold tracking-[-0.18px] text-teal-grey-700">
               배정 현황
             </span>
           </td>
-          {PARTS.map((part) => {
-            const diff = partTotal(part) - partQuota(part);
+          {columns.map((col) => {
+            const diff = partTotal(col.part!) - partQuota(col.part!);
             return (
               <td
-                key={part}
-                className={`flex w-[186.75px] shrink-0 items-center justify-center border-x border-teal-grey-300 py-4 ${diff !== 0 ? 'bg-fill-error-weak-50' : 'bg-teal-grey-75'}`}
+                key={col.part}
+                className={`flex w-[186.75px] shrink-0 cursor-pointer items-center justify-center border-x border-teal-grey-300 py-4 ${diff !== 0 ? 'bg-fill-error-weak-50' : 'bg-teal-grey-75'}`}
               >
                 {diff === 0 ? (
                   <span className="text-[18px] leading-[1.4] font-medium text-teal-grey-500">
@@ -68,7 +72,7 @@ const QuotaTableFooter = ({ partTotal, partQuota }: Props) => {
             );
           })}
           <td
-            className={`relative flex flex-1 items-center justify-center overflow-hidden border-l border-teal-grey-300 ${totalDiff !== 0 ? 'bg-fill-error-weak-50' : 'bg-teal-grey-75'}`}
+            className={`relative flex flex-1 cursor-pointer items-center justify-center overflow-hidden border-l border-teal-grey-300 ${totalDiff !== 0 ? 'bg-fill-error-weak-50' : 'bg-teal-grey-75'}`}
           >
             {totalDiff === 0 ? (
               <svg
