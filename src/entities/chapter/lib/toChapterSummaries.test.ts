@@ -21,9 +21,40 @@ const response = {
 describe('toChapterSummaries', () => {
   it('chapterId · chapterName을 숫자 ID와 이름으로 바꾼다', () => {
     expect(toChapterSummaries(response)).toEqual([
-      { id: 42, name: '수달' },
-      { id: 37, name: '쿼카' },
-      { id: 33, name: '캥거루' },
+      { id: 42, name: '수달', schools: [] },
+      { id: 37, name: '쿼카', schools: [] },
+      { id: 33, name: '캥거루', schools: [] },
+    ]);
+  });
+
+  it('지부 소속 학교를 숫자 ID와 이름으로 바꾼다', () => {
+    const withSchools = {
+      gisus: [
+        {
+          chapters: [
+            {
+              chapterId: '33',
+              chapterName: '캥거루',
+              schools: [
+                { schoolId: '2', schoolName: '가톨릭대학교' },
+                { schoolId: '39', schoolName: '세종대학교' },
+                { schoolName: 'ID 없음' },
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as GisuOrganizationResponse;
+
+    expect(toChapterSummaries(withSchools)).toEqual([
+      {
+        id: 33,
+        name: '캥거루',
+        schools: [
+          { id: 2, name: '가톨릭대학교' },
+          { id: 39, name: '세종대학교' },
+        ],
+      },
     ]);
   });
 

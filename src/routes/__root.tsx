@@ -6,6 +6,7 @@ import { LinkProvider } from '@umc-product/react';
 import { MOCK_CHAPTERS } from '@/entities/chapter';
 import { myInfoQueryOptions, type Session, toSession, useSessionStore } from '@/entities/session';
 import { RouterLink } from '@/shared/ui/RouterLink';
+import { Footer } from '@/widgets/footer';
 import { Header } from '@/widgets/header';
 import { ToastProvider } from '@/widgets/toast';
 
@@ -35,8 +36,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   component: () => (
     <LinkProvider component={RouterLink}>
       <ToastProvider>
-        <Header />
-        <Outlet />
+        {/* 내용이 짧아도 푸터가 화면 맨 아래에 붙도록 내용 영역이 남는 높이를 채움 */}
+        <div className="flex min-h-dvh flex-col">
+          <Header />
+          <div className="flex flex-1 flex-col">
+            <Outlet />
+          </div>
+          <Footer />
+        </div>
       </ToastProvider>
       <TanStackRouterDevtools />
     </LinkProvider>

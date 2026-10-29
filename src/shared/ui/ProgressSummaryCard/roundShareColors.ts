@@ -11,9 +11,9 @@ export const ROUND_SEGMENT_FILL: Record<
   3: { base: '#FBFCFC', gradientOpacity: 0.2, gradientFromBottom: false },
 };
 
-// 차수 목록 앞 점 색
+// 차수 목록 앞 점 색 (DS DotBadge 색 변수)
 export const ROUND_DOT_CLASS: Record<SummaryRound, string> = {
-  1: 'bg-[#7AD9CD]',
-  2: 'bg-[#C1F3ED]',
-  3: 'bg-[#EDFBFA]',
+  1: '[--umc-dot-badge-color:#7AD9CD]',
+  2: '[--umc-dot-badge-color:#C1F3ED]',
+  3: '[--umc-dot-badge-color:#EDFBFA]',
 };
