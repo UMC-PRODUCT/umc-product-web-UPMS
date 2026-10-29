@@ -36,13 +36,9 @@ export type ProjectDraft = {
   sectionEnabled: Record<Exclude<QuestionSectionKey, 'COMMON'>, boolean>;
 };
 
-// 임시 저장은 파일을 제외한 값만 보관 (서버 연동 전까지 화면 안에서만 유지)
-export type SavedProjectDraft = Omit<ProjectDraft, 'thumbnail' | 'logo'>;
-
 export type PmCandidate = {
   id: string;
   nickname: string;
   name: string;
-  chapterId: string;
   schoolName: string;
 };

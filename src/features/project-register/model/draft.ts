@@ -4,7 +4,6 @@ import type {
   QuestionSectionKey,
   QuestionType,
   RecruitInfo,
-  SavedProjectDraft,
 } from './types';
 
 export const EMPTY_RECRUIT: RecruitInfo = { designCount: 0, peCount: 0, pePlatform: null };
@@ -100,19 +99,3 @@ export const hasDraftContent = (draft: ProjectDraft) =>
   Object.values(draft.questions).some((questions) => questions.length > 0) ||
   draft.sectionEnabled.DESIGN ||
   draft.sectionEnabled.PE;
-
-export const toSavedDraft = (draft: ProjectDraft): SavedProjectDraft => ({
-  name: draft.name,
-  description: draft.description,
-  planUrl: draft.planUrl,
-  pmIds: draft.pmIds,
-  recruit: draft.recruit,
-  questions: draft.questions,
-  sectionEnabled: draft.sectionEnabled,
-});
-
-export const fromSavedDraft = (saved: SavedProjectDraft): ProjectDraft => ({
-  ...saved,
-  thumbnail: null,
-  logo: null,
-});

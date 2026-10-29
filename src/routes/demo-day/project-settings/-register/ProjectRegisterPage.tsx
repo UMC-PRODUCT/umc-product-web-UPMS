@@ -1,26 +1,28 @@
+import { useQuery } from '@tanstack/react-query';
 import { useBlocker } from '@tanstack/react-router';
 import { Button, Dialog, PageHeader, StepNavigation } from '@umc-product/react';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
-import { useProjectRegisterAccess, useSessionStore } from '@/entities/session';
+import { myInfoQueryOptions, useProjectRegisterAccess, useSessionStore } from '@/entities/session';
 import {
   BasicInfoStep,
   createInitialDraft,
-  fromSavedDraft,
+  createServerProjectState,
   hasDraftContent,
   isBasicInfoComplete,
   isQuestionsComplete,
   isRecruitComplete,
-  MOCK_ADMIN_RECRUIT,
-  MOCK_MY_PM,
-  MOCK_PM_CANDIDATES,
   type PePlatform,
   type ProjectDraft,
   QuestionStep,
   RecruitInfoStep,
-  toSavedDraft,
-  useProjectDraftStore,
+  useMyDraftProject,
+  usePmCandidates,
+  useSaveProject,
 } from '@/features/project-register';
+import { ApiError } from '@/shared/api/client';
+import { toId } from '@/shared/api/toId';
+import { formatSchoolName } from '@/shared/lib/formatSchoolName';
 import { useAppToast } from '@/widgets/toast';
 
 const BREADCRUMBS = [
@@ -40,10 +42,8 @@ const TOAST_MESSAGE = {
   registered: '프로젝트가 등록되었어요',
   thumbnailRejected: 'JPG, PNG 형식의 10MB 이하 파일만 올릴 수 있어요',
   logoRejected: 'PNG, SVG 형식의 5MB 이하 파일만 올릴 수 있어요',
+  failed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
 };
-
-// TODO: 임시 저장 · 프로젝트 등록 API 연동 후 제거 (저장 중 버튼 로딩 확인용)
-const MOCK_REQUEST_DELAY = 600;
 
 const PE_PLATFORM_LABEL: Record<PePlatform, string> = { WEB: 'Web', MOBILE: 'Mobile' };
 
@@ -59,31 +59,29 @@ const RECRUIT_STEP = 2;
 const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
   const toast = useAppToast();
   const access = useProjectRegisterAccess();
-  const { role, chapterId } = useSessionStore((state) => state.session);
-  const savedDraft = useProjectDraftStore((state) => state.saved);
-  const saveDraft = useProjectDraftStore((state) => state.save);
-  const clearDraft = useProjectDraftStore((state) => state.clear);
+  const { role, gisuId, serverChapterId } = useSessionStore((state) => state.session);
+  const { data: myInfo } = useQuery(myInfoQueryOptions);
+  const { hasDraft, loadDraft } = useMyDraftProject(gisuId);
+  const { mutateAsync: saveProject } = useSaveProject();
 
   const isAdmin = access === 'ADMIN';
   // 지부장은 본인 지부 PM만 고를 수 있음
-  const pmCandidates = isAdmin
-    ? role === 'CHAPTER_ADMIN'
-      ? MOCK_PM_CANDIDATES.filter((candidate) => candidate.chapterId === chapterId)
-      : MOCK_PM_CANDIDATES
-    : null;
-  const myPmLabel = `${MOCK_MY_PM.nickname}/${MOCK_MY_PM.name} · ${MOCK_MY_PM.schoolName}`;
+  const { data: pmCandidates = [] } = usePmCandidates({
+    gisuId,
+    chapterId: role === 'CHAPTER_ADMIN' ? serverChapterId : null,
+    enabled: isAdmin,
+  });
+  const myPmLabel = `${myInfo?.nickname ?? ''}/${myInfo?.name ?? ''} · ${formatSchoolName(myInfo?.schoolName)}`;
+
+  // 서버에 이미 반영된 내용. 저장이 중간에 실패해도 이어서 저장하도록 화면이 들고 있음
+  const serverState = useRef(createServerProjectState());
 
   const [step, setStep] = useState(1);
-  const [draft, setDraft] = useState<ProjectDraft>(() => ({
-    ...createInitialDraft(),
-    recruit: isAdmin
-      ? createInitialDraft().recruit
-      : (MOCK_ADMIN_RECRUIT ?? createInitialDraft().recruit),
-  }));
+  const [draft, setDraft] = useState<ProjectDraft>(createInitialDraft);
   const [dirty, setDirty] = useState(false);
   const [draftSaving, setDraftSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [resumeDialogOpen, setResumeDialogOpen] = useState(savedDraft !== null);
+  const [resumeAnswered, setResumeAnswered] = useState(false);
 
   const updateDraft = (patch: Partial<ProjectDraft>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -102,16 +100,54 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
   // PM은 모집 정보를 입력하지 않으므로 운영진만 확인
   const recruitComplete = !isAdmin || isRecruitComplete(draft.recruit);
 
-  const persistDraft = (onSaved?: () => void) => {
-    // TODO: 임시 저장 API 연동. 지금은 화면 안에서만 저장 (이미지 파일은 저장되지 않음)
-    setDraftSaving(true);
-    window.setTimeout(() => {
-      saveDraft(toSavedDraft(draft));
+  const save = async (submit: boolean) => {
+    try {
+      await saveProject({
+        gisuId,
+        isAdmin,
+        chapterId: role === 'CHAPTER_ADMIN' ? serverChapterId : null,
+        draft,
+        server: serverState.current,
+        submit,
+      });
       setDirty(false);
-      setDraftSaving(false);
-      toast.show(TOAST_MESSAGE.draftSaved);
-      onSaved?.();
-    }, MOCK_REQUEST_DELAY);
+      return true;
+    } catch (error) {
+      toast.show(error instanceof ApiError ? error.message : TOAST_MESSAGE.failed, {
+        color: 'error',
+      });
+      return false;
+    }
+  };
+
+  const persistDraft = async (onSaved?: () => void) => {
+    setDraftSaving(true);
+    const saved = await save(false);
+    setDraftSaving(false);
+    if (!saved) return;
+    toast.show(TOAST_MESSAGE.draftSaved);
+    onSaved?.();
+  };
+
+  const handleResume = async () => {
+    setResumeAnswered(true);
+    try {
+      const loaded = await loadDraft();
+      if (!loaded) return;
+      const [mainPmId, coPmId] = loaded.draft.pmIds.map(toId);
+      serverState.current = {
+        ...createServerProjectState(),
+        projectId: loaded.projectId,
+        mainPmId: mainPmId ?? null,
+        coPmId: coPmId ?? null,
+      };
+      setDraft(loaded.draft);
+      setDirty(false);
+    } catch (error) {
+      toast.show(error instanceof ApiError ? error.message : TOAST_MESSAGE.failed, {
+        color: 'error',
+      });
+    }
   };
 
   const handleNext = () => {
@@ -130,7 +166,7 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
   const handlePrev = () =>
     setStep((prev) => (prev === RECRUIT_STEP + 1 && !isAdmin ? 1 : prev - 1));
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!basicComplete || !recruitComplete) {
       toast.show(TOAST_MESSAGE.incomplete, { color: 'error' });
       return;
@@ -139,16 +175,13 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
       toast.show(TOAST_MESSAGE.sectionIncomplete, { color: 'error' });
       return;
     }
-    // TODO: 프로젝트 등록 API 연동 (썸네일 · 로고 업로드 포함). 지금은 화면에서만 등록
     setSubmitting(true);
-    window.setTimeout(() => {
-      setSubmitting(false);
-      setDirty(false);
-      clearDraft();
-      toast.show(TOAST_MESSAGE.registered);
-      // 이동 차단이 풀린 뒤에 목록으로 이동
-      window.setTimeout(onComplete, 0);
-    }, MOCK_REQUEST_DELAY);
+    const submitted = await save(true);
+    setSubmitting(false);
+    if (!submitted) return;
+    toast.show(TOAST_MESSAGE.registered);
+    // 이동 차단이 풀린 뒤에 목록으로 이동
+    window.setTimeout(onComplete, 0);
   };
 
   const busy = draftSaving || submitting;
@@ -187,7 +220,7 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
             <BasicInfoStep
               draft={draft}
               onChange={updateDraft}
-              pmCandidates={pmCandidates}
+              pmCandidates={isAdmin ? pmCandidates : null}
               myPmLabel={myPmLabel}
               onThumbnailReject={() =>
                 toast.show(TOAST_MESSAGE.thumbnailRejected, { color: 'error' })
@@ -225,9 +258,9 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
             <Button
               variant="weak"
               color="neutral"
-              disabled={!dirty || !hasDraftContent(draft)}
+              disabled={!dirty || !hasDraftContent(draft) || submitting}
               isLoading={draftSaving}
-              onClick={() => persistDraft()}
+              onClick={() => void persistDraft()}
             >
               임시 저장
             </Button>
@@ -242,7 +275,11 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
                   다음
                 </Button>
               ) : (
-                <Button isLoading={submitting} disabled={draftSaving} onClick={handleSubmit}>
+                <Button
+                  isLoading={submitting}
+                  disabled={draftSaving}
+                  onClick={() => void handleSubmit()}
+                >
                   프로젝트 등록하기
                 </Button>
               )}
@@ -254,20 +291,14 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
       {/* 피그마: 임시 저장된 프로젝트가 있으면 처음 들어올 때 이어서 쓸지 물어봄 */}
       <Dialog
         className="dialog-flat"
-        open={resumeDialogOpen}
-        onOpenChange={setResumeDialogOpen}
+        open={hasDraft && !resumeAnswered}
+        onOpenChange={(open) => !open && setResumeAnswered(true)}
         title="임시 저장된 프로젝트를 이어서 작성할까요?"
         description="이미 작성 중이던 프로젝트가 있어요."
         cancelLabel="새로 만들기"
-        onCancel={() => {
-          clearDraft();
-          setResumeDialogOpen(false);
-        }}
+        onCancel={() => setResumeAnswered(true)}
         confirmLabel="이어서 작성하기"
-        onConfirm={() => {
-          if (savedDraft) setDraft(fromSavedDraft(savedDraft));
-          setResumeDialogOpen(false);
-        }}
+        onConfirm={() => void handleResume()}
       />
       {/* 피그마: 작성 중에 나가려고 하면 저장 여부를 물어봄 */}
       <Dialog
@@ -279,7 +310,7 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
         cancelLabel="저장 안함"
         onCancel={() => blocker.proceed?.()}
         confirmLabel="저장 후 나가기"
-        onConfirm={() => persistDraft(() => blocker.proceed?.())}
+        onConfirm={() => void persistDraft(() => blocker.proceed?.())}
       />
     </main>
   );
