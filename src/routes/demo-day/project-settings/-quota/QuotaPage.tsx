@@ -140,15 +140,6 @@ const QuotaPage = () => {
       return;
     }
 
-    const totalDiff = columns.reduce(
-      (sum, col) => sum + partTotal(col.part!) - partQuota(col.part!),
-      0,
-    );
-    if (totalDiff > 0) {
-      toast.show('전체 인원보다 더 많이 배정했어요', { color: 'error' });
-      return;
-    }
-
     type CellPart = SavePartQuotasRequest['projects'][0]['entries'][0]['part'];
 
     const changedProjects = Object.entries(draft)
