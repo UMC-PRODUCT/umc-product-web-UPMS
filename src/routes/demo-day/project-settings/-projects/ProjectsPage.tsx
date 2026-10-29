@@ -1,7 +1,8 @@
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { AddIcon, UsersPictogram, WarningTriangleIcon } from '@umc-product/icons';
 import { Button, Dialog, Dimmed, PageHeader } from '@umc-product/react';
 import { Dialog as RadixDialog } from 'radix-ui';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { type Role, useSessionStore, type View } from '@/entities/session';
 import { ChapterSelectHeader, useVisibleChapters } from '@/features/chapter-select';
@@ -13,8 +14,8 @@ import {
 import ProjectCard from '@/widgets/card/projectCard';
 import { useAppToast } from '@/widgets/toast';
 
+import { managedProjectsInfiniteQueryOptions } from './api/managedProjectsQuery';
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
-import { MOCK_PM_PROJECTS, MOCK_PROJECTS } from './mock';
 
 const BREADCRUMBS = [
   { label: '데모데이 매칭', href: '/demo-day' },
@@ -169,6 +170,7 @@ const ProjectsPage = () => {
   const role = useSessionStore((state) => state.session.role);
   const view = useSessionStore((state) => state.view);
   const ownChapterId = useSessionStore((state) => state.session.chapterId);
+  const gisuId = useSessionStore((state) => state.session.gisuId);
   const chapters = useVisibleChapters();
   const [chapterId, setChapterId] = useState(
     () => chapters.find((c) => c.id === ownChapterId)?.id ?? chapters[0]?.id ?? '',
@@ -185,11 +187,25 @@ const ProjectsPage = () => {
 
   const isPmChallenger = view === 'PM_CHALLENGER';
 
-  // TODO: API 연동 (PM 챌린저: 본인 프로젝트 / 어드민: 지부별 프로젝트 목록)
-  const allProjects = isPmChallenger
-    ? MOCK_PM_PROJECTS
-    : MOCK_PROJECTS.filter((p) => p.chapterId === chapterId);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery(
+    managedProjectsInfiniteQueryOptions({ gisuId: gisuId ?? 0 }),
+  );
+  const allProjects = data?.pages.flatMap((p) => p.projects) ?? [];
   const projects = allProjects.filter((p) => !deletedProjectIds.includes(p.projectId));
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage();
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
@@ -294,6 +310,7 @@ const ProjectsPage = () => {
             })()}
           </div>
         )}
+        <div ref={sentinelRef} className="h-1" />
       </div>
 
       <RadixDialog.Root
