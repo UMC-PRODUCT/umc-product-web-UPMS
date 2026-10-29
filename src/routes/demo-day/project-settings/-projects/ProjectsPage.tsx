@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { AddIcon, UsersPictogram, WarningTriangleIcon } from '@umc-product/icons';
 import { Button, Dialog, Dimmed, PageHeader } from '@umc-product/react';
@@ -15,6 +15,7 @@ import {
 import ProjectCard from '@/widgets/card/projectCard';
 import { useAppToast } from '@/widgets/toast';
 
+import { deleteProject } from './api/deleteProject';
 import { managedProjectsInfiniteQueryOptions } from './api/managedProjectsQuery';
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
 
@@ -180,6 +181,7 @@ const ProjectsPage = () => {
   const [deleteTarget, setDeleteTarget] = useState<ManagedProject | null>(null);
   const [deletedProjectIds, setDeletedProjectIds] = useState<string[]>([]);
   const toast = useAppToast();
+  const queryClient = useQueryClient();
 
   // TODO: API 연동 - 현재 지원 기간 여부
   const isApplicationPeriod = false;
@@ -209,11 +211,22 @@ const ProjectsPage = () => {
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
+  const { mutate: deleteMutate } = useMutation({
+    mutationFn: (projectId: string) => deleteProject(projectId),
+    onSuccess: (_data, projectId) => {
+      setDeletedProjectIds((prev) => [...prev, projectId]);
+      setDeleteTarget(null);
+      toast.show('프로젝트가 삭제됐어요.', { color: 'error' });
+      queryClient.invalidateQueries({ queryKey: ['managed-projects'] });
+    },
+    onError: () => {
+      toast.show('프로젝트 삭제에 실패했어요. 다시 시도해 주세요.', { color: 'error' });
+    },
+  });
+
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
-    setDeletedProjectIds((prev) => [...prev, deleteTarget.projectId]);
-    setDeleteTarget(null);
-    toast.show('프로젝트가 삭제됐어요.', { color: 'error' });
+    deleteMutate(deleteTarget.projectId);
   };
 
   return (
