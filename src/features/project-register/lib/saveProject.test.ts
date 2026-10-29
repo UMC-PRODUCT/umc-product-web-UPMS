@@ -126,6 +126,32 @@ describe('saveProject', () => {
     expect(calls.map((call) => call.split(':')[0])).toEqual(['create', 'update', 'form', 'submit']);
   });
 
+  it('추가 문항이 없어도 제출할 때는 지원 폼을 먼저 저장한다', async () => {
+    const draft = filled({ thumbnail: null, logo: null });
+    await saveProject({
+      gisuId: 6,
+      isAdmin: false,
+      draft,
+      server: createServerProjectState(),
+      submit: true,
+    });
+
+    expect(calls.map((call) => call.split(':')[0])).toEqual(['create', 'update', 'form', 'submit']);
+  });
+
+  it('추가 문항이 없는 임시 저장은 지원 폼을 보내지 않는다', async () => {
+    const draft = filled({ thumbnail: null, logo: null });
+    await saveProject({
+      gisuId: 6,
+      isAdmin: false,
+      draft,
+      server: createServerProjectState(),
+      submit: false,
+    });
+
+    expect(calls).not.toContain('form');
+  });
+
   it('만든 초안은 다시 만들지 않고, 올린 이미지는 다시 올리지 않으며, PM을 바꾸면 양도한다', async () => {
     const draft = filled({ pmIds: ['3'] });
     const server = {

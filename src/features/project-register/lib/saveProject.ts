@@ -116,7 +116,8 @@ export const saveProject = async ({
   }
 
   const hasQuestions = Object.values(draft.questions).some((questions) => questions.length > 0);
-  if (hasQuestions) await saveApplicationForm(projectId, toApplicationFormRequest(draft));
+  // 고정 문항(이름 · 포트폴리오)은 화면에만 있어서, 추가 문항이 없어도 제출하려면 지원 폼이 서버에 있어야 함
+  if (hasQuestions || submit) await saveApplicationForm(projectId, toApplicationFormRequest(draft));
 
   if (submit) await submitProject(projectId);
   return projectId;
