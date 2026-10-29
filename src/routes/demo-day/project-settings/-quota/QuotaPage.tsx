@@ -9,7 +9,7 @@ import {
   type SelectOption,
 } from '@umc-product/react';
 import { useRef, useState } from 'react';
-import { useDebounceValue } from 'use-debounce';
+import { useDebounce } from 'use-debounce';
 
 import { useProjectSettingsAccess, useSessionStore } from '@/entities/session';
 import SearchBar from '@/widgets/searchBar/SearchBar';
@@ -49,7 +49,7 @@ const QuotaPage = () => {
 
   // 검색 및 필터
   const [search, setSearch] = useState('');
-  const [debouncedSearch] = useDebounceValue(search, 300);
+  const [debouncedSearch] = useDebounce(search, 300);
   const [schoolId, setSchoolId] = useState<number | undefined>(undefined);
 
   const { data, isError } = useQuery(
