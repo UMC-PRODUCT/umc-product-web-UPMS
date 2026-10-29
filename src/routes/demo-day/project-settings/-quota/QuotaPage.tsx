@@ -134,24 +134,26 @@ const QuotaPage = () => {
   const handleSave = () => {
     if (!data?.chapterId) return;
 
+    const isPartOver = columns.some((col) => partTotal(col.part!) > partQuota(col.part!));
+    if (isPartOver) {
+      toast.show('해당 파트에 정해진 인원보다 많이 배정했어요', { color: 'error' });
+      return;
+    }
+
     const totalDiff = columns.reduce(
       (sum, col) => sum + partTotal(col.part!) - partQuota(col.part!),
       0,
     );
     if (totalDiff > 0) {
-      toast.show('전체 정원보다 배정 인원이 많아요.', { color: 'error' });
+      toast.show('전체 인원보다 더 많이 배정했어요', { color: 'error' });
       return;
     }
 
-    const isBelowMinimum = projects.some((p) =>
-      (p.cells ?? []).some((cell) => {
-        const draftQuota = draft[String(p.projectId!)]?.[cell.part!] ?? 0;
-        return draftQuota < (cell.minimumQuota ?? 0);
-      }),
-    );
-    if (isBelowMinimum) {
-      toast.show('최소 정원보다 배정 인원이 부족해요.', { color: 'error' });
-      return;
+    const isPartUnder = columns.some((col) => partTotal(col.part!) < partQuota(col.part!));
+    if (isPartUnder) {
+      toast.show('해당 파트에 배정한 인원이 부족해요', { color: 'error' });
+    } else if (totalDiff < 0) {
+      toast.show('전체 인원을 다 배정하지 않았어요', { color: 'error' });
     }
 
     type CellPart = SavePartQuotasRequest['projects'][0]['entries'][0]['part'];
