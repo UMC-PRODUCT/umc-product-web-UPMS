@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { AddIcon, UsersPictogram, WarningTriangleIcon } from '@umc-product/icons';
 import { Button, Dialog, Dimmed, PageHeader } from '@umc-product/react';
 import { Dialog as RadixDialog } from 'radix-ui';
@@ -186,6 +187,7 @@ const ProjectsPage = () => {
   const isMatchingPeriod = false;
 
   const isPmChallenger = view === 'PM_CHALLENGER';
+  const navigate = useNavigate();
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery(
     managedProjectsInfiniteQueryOptions({ gisuId: gisuId ?? 0 }),
@@ -253,6 +255,9 @@ const ProjectsPage = () => {
                   isPmChallenger
                   isMatchingPeriod={isMatchingPeriod}
                   onCardClick={() => setSelectedProject(project)}
+                  onViewApplications={() =>
+                    navigate({ to: '/demo-day/team-matching/applications' })
+                  }
                   onDelete={() => setDeleteTarget(project)}
                 />
               </li>
@@ -278,6 +283,9 @@ const ProjectsPage = () => {
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
+                              onViewApplications={() =>
+                                navigate({ to: '/demo-day/team-matching/applications' })
+                              }
                               onDelete={() => setDeleteTarget(project)}
                             />
                           </li>
@@ -298,6 +306,9 @@ const ProjectsPage = () => {
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
+                              onViewApplications={() =>
+                                navigate({ to: '/demo-day/team-matching/applications' })
+                              }
                               onDelete={() => setDeleteTarget(project)}
                             />
                           </li>
