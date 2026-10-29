@@ -149,13 +149,6 @@ const QuotaPage = () => {
       return;
     }
 
-    const isPartUnder = columns.some((col) => partTotal(col.part!) < partQuota(col.part!));
-    if (isPartUnder) {
-      toast.show('해당 파트에 배정한 인원이 부족해요', { color: 'error' });
-    } else if (totalDiff < 0) {
-      toast.show('전체 인원을 다 배정하지 않았어요', { color: 'error' });
-    }
-
     type CellPart = SavePartQuotasRequest['projects'][0]['entries'][0]['part'];
 
     const changedProjects = Object.entries(draft)
