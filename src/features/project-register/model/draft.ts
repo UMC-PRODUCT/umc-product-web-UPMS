@@ -11,6 +11,8 @@ export const EMPTY_RECRUIT: RecruitInfo = { designCount: 0, peCount: 0, pePlatfo
 export const createInitialDraft = (): ProjectDraft => ({
   thumbnail: null,
   logo: null,
+  thumbnailUrl: '',
+  logoUrl: '',
   name: '',
   description: '',
   planUrl: '',
@@ -64,8 +66,8 @@ export const isRecruitComplete = (recruit: RecruitInfo) =>
 
 // PM 선택은 운영진만 함 (PM 본인 등록은 본인으로 정해짐)
 export const isBasicInfoComplete = (draft: ProjectDraft, needsPmSelect: boolean) =>
-  draft.thumbnail !== null &&
-  draft.logo !== null &&
+  (draft.thumbnail !== null || draft.thumbnailUrl !== '') &&
+  (draft.logo !== null || draft.logoUrl !== '') &&
   draft.name.trim() !== '' &&
   draft.description.trim() !== '' &&
   draft.planUrl.trim() !== '' &&
@@ -89,6 +91,8 @@ export const isQuestionsComplete = (draft: ProjectDraft) => {
 export const hasDraftContent = (draft: ProjectDraft) =>
   draft.thumbnail !== null ||
   draft.logo !== null ||
+  draft.thumbnailUrl !== '' ||
+  draft.logoUrl !== '' ||
   draft.name !== '' ||
   draft.description !== '' ||
   draft.planUrl !== '' ||

@@ -26,6 +26,9 @@ export type RecruitInfo = {
 export type ProjectDraft = {
   thumbnail: File | null; // 프로젝트 카드 썸네일 (648*324, 2:1)
   logo: File | null;
+  // 이어 쓰는 초안은 파일이 아니라 서버에 저장된 이미지 주소만 있음. 새로 고르면 파일이 우선
+  thumbnailUrl: string;
+  logoUrl: string;
   name: string;
   description: string;
   planUrl: string;

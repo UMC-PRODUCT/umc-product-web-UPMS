@@ -14,7 +14,7 @@ const memberIdOf = (member: { memberId?: unknown } | undefined) => {
   return id === null ? '' : String(id);
 };
 
-// 서버에 저장된 초안을 화면 초안으로 되돌림. 이미지는 파일이 아니라 주소만 있어서 다시 올려야 함
+// 서버에 저장된 초안을 화면 초안으로 되돌림. 이미지는 파일이 아니라 주소만 있어서 주소로 보여주고, 새로 고를 때만 다시 올림
 export const fromServerDraft = (
   draft: DraftProjectResponse,
   partQuotas: PartQuotas,
@@ -26,6 +26,8 @@ export const fromServerDraft = (
 
   return {
     ...initial,
+    thumbnailUrl: draft.thumbnailImageUrl ?? '',
+    logoUrl: draft.logoImageUrl ?? '',
     name: draft.name ?? '',
     description: draft.description ?? '',
     planUrl: draft.externalLink ?? '',

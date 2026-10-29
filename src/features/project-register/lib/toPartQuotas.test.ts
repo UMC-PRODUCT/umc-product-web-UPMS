@@ -32,4 +32,13 @@ describe('fromPartQuotas', () => {
       ]),
     ).toEqual({ designCount: 2, peCount: 4, pePlatform: 'MOBILE' });
   });
+
+  it('서버가 정원을 문자열로 줘도 숫자로 되돌린다', () => {
+    const quotas = [
+      { part: 'DESIGN', quota: '1' },
+      { part: 'WEB_PRODUCT_ENGINEER', quota: '0' },
+    ] as unknown as Parameters<typeof fromPartQuotas>[0];
+
+    expect(fromPartQuotas(quotas)).toEqual({ designCount: 1, peCount: 0, pePlatform: null });
+  });
 });

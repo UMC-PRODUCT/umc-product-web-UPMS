@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { searchChallengers } from '../api/searchPmCandidates';
+import { searchMembers } from '../api/searchPmCandidates';
 import { toPmCandidates } from '../lib/toPmCandidates';
 
 // 후보 목록을 한 번에 받아 입력창에서 거름 (PM 챌린저는 지부당 많아야 수십 명)
@@ -16,7 +16,7 @@ export const usePmCandidates = ({ gisuId, chapterId, enabled }: UsePmCandidatesP
   useQuery({
     queryKey: ['pm-candidates', gisuId, chapterId],
     queryFn: () =>
-      searchChallengers({
+      searchMembers({
         gisuId: gisuId as number,
         part: 'PLAN',
         chapterId: chapterId ?? undefined,

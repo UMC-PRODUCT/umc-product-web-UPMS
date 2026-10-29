@@ -21,7 +21,8 @@ export const fromPartQuotas = (
 ): RecruitInfo | null => {
   if (!partQuotas || partQuotas.length === 0) return null;
 
-  const find = (part: string) => partQuotas.find((item) => item.part === part)?.quota ?? 0;
+  // 서버가 숫자를 문자열("1")로 내려줘서 숫자로 맞춤. 그대로 두면 합계가 문자열 이어붙이기("1" + 0 = "10")가 됨
+  const find = (part: string) => Number(partQuotas.find((item) => item.part === part)?.quota ?? 0);
   const webCount = find(PE_PART.WEB);
   const mobileCount = find(PE_PART.MOBILE);
 
