@@ -176,17 +176,24 @@ describe('getProjectActions - 운영진 · PM', () => {
 describe('getProjectActions - 팀원 구성', () => {
   const admin = { ...base, role: 'SUPER_ADMIN' as const, view: 'ADMIN' as const };
 
-  it('2차 이후 지원 기간에만 보인다', () => {
+  it('2차 이후에는 지원 기간이든 매칭 기간이든 보인다', () => {
     expect(
       getProjectActions({ ...admin, period: { track: 'PE', phase: 'APPLY', round: 2 } })
         .showTeamButton,
     ).toBe(true);
     expect(
+      getProjectActions({ ...admin, period: { track: 'PE', phase: 'MATCHING', round: 2 } })
+        .showTeamButton,
+    ).toBe(true);
+  });
+
+  it('1차에는 전 차수 결과가 없어 보이지 않는다', () => {
+    expect(
       getProjectActions({ ...admin, period: { track: 'PE', phase: 'APPLY', round: 1 } })
         .showTeamButton,
     ).toBe(false);
     expect(
-      getProjectActions({ ...admin, period: { track: 'PE', phase: 'MATCHING', round: 2 } })
+      getProjectActions({ ...admin, period: { track: 'PE', phase: 'MATCHING', round: 1 } })
         .showTeamButton,
     ).toBe(false);
   });

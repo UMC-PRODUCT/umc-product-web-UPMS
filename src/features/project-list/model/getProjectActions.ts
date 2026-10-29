@@ -113,6 +113,6 @@ export const getProjectActions = (params: GetProjectActionsParams): ProjectActio
     params.view === 'CHALLENGER'
       ? getChallengerPrimaryAction(params)
       : getStaffPrimaryAction(params),
-  // 매칭 기간이 끝나고 다음 차수 지원 기간이 되어야 팀원 구성을 볼 수 있음
-  showTeamButton: params.period.phase === 'APPLY' && params.period.round >= 2,
+  // 2차부터 전 차수 매칭 결과가 있음. 매칭 기간에도 전 차수 결과를 유지하다가 결과 발표 시 함께 갱신됨
+  showTeamButton: params.period.round >= 2,
 });
