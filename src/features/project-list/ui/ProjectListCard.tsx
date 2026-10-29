@@ -30,8 +30,10 @@ const ProjectListCard = ({ project, period, onClick }: ProjectListCardProps) => 
         onClick={onClick}
         className="absolute inset-0 z-10 cursor-pointer rounded-xl"
       />
-      <div className="aspect-[2/1] w-full bg-teal-grey-100">
-        {thumbnailUrl && <img src={thumbnailUrl} alt="" className="size-full object-cover" />}
+      <div className="relative aspect-[2/1] w-full shrink-0 overflow-hidden bg-teal-grey-100">
+        {thumbnailUrl && (
+          <img src={thumbnailUrl} alt="" className="absolute inset-0 size-full object-cover" />
+        )}
       </div>
       <div className="flex flex-col gap-4 p-5">
         <div className="flex h-[98px] flex-col justify-center gap-1.5">

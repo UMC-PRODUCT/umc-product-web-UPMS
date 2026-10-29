@@ -113,6 +113,7 @@ export const getProjectActions = (params: GetProjectActionsParams): ProjectActio
     params.view === 'CHALLENGER'
       ? getChallengerPrimaryAction(params)
       : getStaffPrimaryAction(params),
-  // 2차부터 전 차수 매칭 결과가 있음. 매칭 기간에도 전 차수 결과를 유지하다가 결과 발표 시 함께 갱신됨
-  showTeamButton: params.period.round >= 2,
+  // 피그마 상세 카드에는 항상 있음. 매칭 기간에도 전 차수 결과를 유지하다가 결과 발표 시 함께 갱신되고,
+  // 매칭된 팀원이 아직 없으면 팀원 구성 패널이 "매칭이 진행 중이에요"로 안내함
+  showTeamButton: true,
 });
