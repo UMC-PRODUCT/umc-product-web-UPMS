@@ -13,7 +13,7 @@ const QuotaTableFooter = ({ columns, partTotal, partQuota }: Props) => {
   );
 
   return (
-    <table className="w-full border-collapse">
+    <table className="w-auto min-w-full border-collapse">
       <tfoot>
         <tr className="flex">
           <td className="flex w-[170px] shrink-0 cursor-pointer items-center justify-center border-r border-teal-grey-300 bg-teal-50 py-4">
@@ -32,7 +32,7 @@ const QuotaTableFooter = ({ columns, partTotal, partQuota }: Props) => {
               <span className="text-title-3-medium text-teal-grey-500">명</span>
             </td>
           ))}
-          <td className="flex flex-1 cursor-pointer items-center justify-center border-l border-teal-grey-300 bg-teal-100 py-4">
+          <td className="flex min-w-[150px] flex-1 cursor-pointer items-center justify-center border-l border-teal-grey-300 bg-teal-100 py-4">
             <div className="flex items-start gap-0.5 text-[18px] leading-[1.4]">
               <span className="font-semibold tracking-[-0.36px] text-teal-600">
                 총 {columns.reduce((sum, col) => sum + partTotal(col.part!), 0)}
@@ -72,7 +72,7 @@ const QuotaTableFooter = ({ columns, partTotal, partQuota }: Props) => {
             );
           })}
           <td
-            className={`relative flex flex-1 cursor-pointer items-center justify-center overflow-hidden border-l border-teal-grey-300 ${totalDiff !== 0 ? 'bg-fill-error-weak-50' : 'bg-teal-grey-75'}`}
+            className={`relative flex min-w-[150px] flex-1 cursor-pointer items-center justify-center overflow-hidden border-l border-teal-grey-300 ${totalDiff !== 0 ? 'bg-fill-error-weak-50' : 'bg-teal-grey-75'}`}
           >
             {totalDiff === 0 ? (
               <svg

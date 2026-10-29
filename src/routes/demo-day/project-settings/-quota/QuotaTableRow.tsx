@@ -99,7 +99,7 @@ const QuotaTableRow = ({
         );
       })}
 
-      <td className="flex h-[60px] flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 border border-r-0 border-teal-grey-300 bg-[#F6F7F7]">
+      <td className="flex h-[60px] min-w-[150px] flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 border border-r-0 border-teal-grey-300 bg-[#F6F7F7]">
         <span className="text-body-3-medium leading-normal text-teal-grey-500">팀 배정 인원</span>
         <div className="flex items-start gap-0.5 text-[18px] leading-[1.4]">
           <span className="font-semibold tracking-[-0.36px] text-teal-600">{total}</span>
