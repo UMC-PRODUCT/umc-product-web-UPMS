@@ -1,12 +1,12 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { AddIcon, UsersPictogram, WarningTriangleIcon } from '@umc-product/icons';
-import { Button, Dialog, Dimmed, PageHeader } from '@umc-product/react';
+import { Button, Dialog, Dimmed, PageHeader, SegmentedControl } from '@umc-product/react';
 import { Dialog as RadixDialog } from 'radix-ui';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { type Role, useSessionStore, type View } from '@/entities/session';
-import { ChapterSelectHeader, useVisibleChapters } from '@/features/chapter-select';
+import { useChapters } from '@/entities/chapter';
+import { getChapterScope, type Role, useSessionStore, type View } from '@/entities/session';
 import {
   type ManagedProject,
   ProjectManagementCard,
@@ -177,12 +177,14 @@ const EmptyState = ({
 const ProjectsPage = () => {
   const role = useSessionStore((state) => state.session.role);
   const view = useSessionStore((state) => state.view);
-  const ownChapterId = useSessionStore((state) => state.session.chapterId);
+  const ownChapterId = useSessionStore((state) => state.session.serverChapterId);
   const gisuId = useSessionStore((state) => state.session.gisuId);
-  const chapters = useVisibleChapters();
-  const [chapterId, setChapterId] = useState(
-    () => chapters.find((c) => c.id === ownChapterId)?.id ?? chapters[0]?.id ?? '',
-  );
+  const { data: allChapters = [] } = useChapters(gisuId);
+  const chapterScope = getChapterScope(role);
+  const chapters =
+    chapterScope === 'ALL' ? allChapters : allChapters.filter((c) => c.id === ownChapterId);
+  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
+  const chapterId = selectedChapterId ?? chapters[0]?.id ?? null;
   const [selectedProject, setSelectedProject] = useState<ManagedProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ManagedProject | null>(null);
   const [deletedProjectIds, setDeletedProjectIds] = useState<string[]>([]);
@@ -198,7 +200,10 @@ const ProjectsPage = () => {
   const navigate = useNavigate();
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery(
-    managedProjectsInfiniteQueryOptions({ gisuId: gisuId ?? 0 }),
+    managedProjectsInfiniteQueryOptions({
+      gisuId: gisuId ?? 0,
+      chapterId: isPmChallenger ? undefined : (chapterId ?? undefined),
+    }),
   );
   const allProjects = data?.pages.flatMap((p) => p.projects) ?? [];
   const projects = allProjects.filter((p) => !deletedProjectIds.includes(p.projectId));
@@ -246,8 +251,14 @@ const ProjectsPage = () => {
 
       <div className="flex w-full max-w-[1082px] flex-col">
         <div className="flex items-center justify-between gap-4">
-          {!isPmChallenger && (
-            <ChapterSelectHeader value={chapterId} onValueChange={setChapterId} />
+          {!isPmChallenger && chapters.length > 0 && (
+            <SegmentedControl
+              aria-label="지부 선택"
+              items={chapters.map((c) => ({ value: String(c.id), label: c.name }))}
+              value={String(chapterId ?? chapters[0]?.id ?? '')}
+              onValueChange={(v) => setSelectedChapterId(Number(v))}
+              className="[&_[role=radio]:not([data-checked])]:text-teal-600"
+            />
           )}
           {role !== 'HQ_ADMIN' && (
             <Button
@@ -277,7 +288,7 @@ const ProjectsPage = () => {
                 <ProjectManagementCard
                   project={project}
                   role={role}
-                  ownChapterId={ownChapterId ?? ''}
+                  ownChapterId={String(ownChapterId ?? '')}
                   isPmChallenger
                   isMatchingPeriod={isMatchingPeriod}
                   onCardClick={() => setSelectedProject(project)}
@@ -305,7 +316,7 @@ const ProjectsPage = () => {
                             <ProjectManagementCard
                               project={project}
                               role={role}
-                              ownChapterId={ownChapterId ?? ''}
+                              ownChapterId={String(ownChapterId ?? '')}
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
@@ -334,7 +345,7 @@ const ProjectsPage = () => {
                             <ProjectManagementCard
                               project={project}
                               role={role}
-                              ownChapterId={ownChapterId ?? ''}
+                              ownChapterId={String(ownChapterId ?? '')}
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
@@ -400,7 +411,7 @@ const ProjectsPage = () => {
                     role,
                     view,
                     selectedProject,
-                    ownChapterId ?? '',
+                    String(ownChapterId ?? ''),
                     isApplicationPeriod,
                     isMatchingPeriod,
                   )}

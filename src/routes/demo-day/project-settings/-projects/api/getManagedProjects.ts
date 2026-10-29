@@ -7,6 +7,7 @@ type ApiPartQuota = components['schemas']['PartQuotaInfo'];
 
 export type GetManagedProjectsParams = {
   gisuId: number;
+  chapterId?: number;
   keyword?: string;
   page?: number;
   size?: number;

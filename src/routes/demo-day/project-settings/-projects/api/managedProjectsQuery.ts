@@ -4,6 +4,7 @@ import { getManagedProjects } from './getManagedProjects';
 
 type BaseParams = {
   gisuId: number;
+  chapterId?: number;
   keyword?: string;
   size?: number;
   sort?: string[];
