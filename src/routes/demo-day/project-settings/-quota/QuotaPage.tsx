@@ -77,11 +77,12 @@ const QuotaPage = () => {
   const queryClient = useQueryClient();
 
   const { mutate: saveMutate, isPending: isSaving } = useMutation({
-    mutationFn: savePartQuotas,
-    onSuccess: () => {
+    mutationFn: ({ isUnder: _, ...body }: SavePartQuotasRequest & { isUnder: boolean }) =>
+      savePartQuotas(body),
+    onSuccess: (_, { isUnder }) => {
       setSaved(draft);
       setEditingCell(null);
-      toast.show('저장되었어요.');
+      toast.show(isUnder ? '정해진 인원보다 적게 배정되었어요' : '저장되었어요');
       queryClient.invalidateQueries({ queryKey: ['part-quotas'] });
     },
     onError: (error: Error) => {
@@ -138,9 +139,13 @@ const QuotaPage = () => {
 
     const isPartOver = columns.some((col) => partTotal(col.part!) > partQuota(col.part!));
     if (isPartOver) {
-      toast.show('해당 파트에 정해진 인원보다 많이 배정했어요', { color: 'error' });
+      toast.show('정해진 인원보다 많이 배정되었어요', { color: 'error' });
       return;
     }
+
+    const isUnder = columns
+      .filter((col) => col.canEdit?.allowed === true)
+      .some((col) => partTotal(col.part!) < partQuota(col.part!));
 
     type CellPart = SavePartQuotasRequest['projects'][0]['entries'][0]['part'];
 
@@ -156,7 +161,12 @@ const QuotaPage = () => {
 
     if (changedProjects.length === 0) return;
 
-    saveMutate({ gisuId: gisuId ?? 0, chapterId: data.chapterId, projects: changedProjects });
+    saveMutate({
+      isUnder,
+      gisuId: gisuId ?? 0,
+      chapterId: data.chapterId,
+      projects: changedProjects,
+    });
   };
 
   const chapterItems = (data?.chapters ?? []).map((c) => ({
