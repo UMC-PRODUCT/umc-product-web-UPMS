@@ -1,4 +1,8 @@
-import { isAnnounceTimeAllowed, toMatchingRoundRequests } from './toMatchingRoundRequests';
+import {
+  isAnnounceTimeAllowed,
+  isStartDateAllowed,
+  toMatchingRoundRequests,
+} from './toMatchingRoundRequests';
 import { toScheduleByTrack } from './toScheduleByTrack';
 
 // 실행 환경 시간대와 상관없이 같은 결과가 나오도록 로컬 시각으로 ISO를 만듦
@@ -106,5 +110,20 @@ describe('isAnnounceTimeAllowed', () => {
 
   it('비어 있으면 false', () => {
     expect(isAnnounceTimeAllowed(null)).toBe(false);
+  });
+});
+
+describe('isStartDateAllowed', () => {
+  // 10/29 오후 3시 기준
+  const now = new Date(2026, 9, 29, 15, 0);
+
+  it.each<[string | null, boolean]>([
+    ['2026-10-30', true], // 내일 0시 시작
+    ['2026-10-29', false], // 오늘 0시는 이미 지남
+    ['2026-10-28', false],
+    [null, false],
+    ['2026-13-01', false],
+  ])('%s → %s', (startDate, expected) => {
+    expect(isStartDateAllowed(startDate, now)).toBe(expected);
   });
 });

@@ -6,11 +6,11 @@ import profileDefault from './assets/profile-default.svg';
 
 type HeaderNavItem = { label: string; href: NonNullable<LinkProps['to']> };
 
+// 피그마 Web/Header: 홈은 로고(DS HeaderHomeLink, Header 기본 logo)로 이동하고 메뉴는 3개
 const NAV_ITEMS: HeaderNavItem[] = [
-  { label: '홈', href: '/' },
   { label: '프로젝트', href: '/projects' },
-  { label: '사용 가이드', href: '/guide' },
   { label: '데모데이 매칭', href: '/demo-day' },
+  { label: '사용 가이드', href: '/guide' },
 ];
 
 const Header = () => {
