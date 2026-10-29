@@ -1,3 +1,5 @@
+import { DotBadge } from '@umc-product/react';
+
 import type { SummaryRound } from './roundShareColors';
 
 export type RoundCount = {
@@ -9,7 +11,8 @@ export type RoundCount = {
 type RoundCountListProps = {
   label: string; // 예: 지원 → "1차 지원", 매칭 → "1차 매칭"
   rounds: RoundCount[];
-  dotClassNames?: Record<SummaryRound, string>; // 도넛 색과 맞춘 차수별 점 (없으면 기본 teal 점)
+  // 도넛 색과 맞춘 차수별 점 색 (--umc-dot-badge-color를 바꾸는 클래스, 없으면 DS 기본 brand 점)
+  dotClassNames?: Record<SummaryRound, string>;
 };
 
 const formatCount = (count: number | null) => (count === null ? '- 명' : `${count}명`);
@@ -23,10 +26,7 @@ const RoundCountList = ({ label, rounds, dotClassNames }: RoundCountListProps) =
         className="flex h-5 items-center justify-between text-body-3-medium whitespace-nowrap"
       >
         <span className="flex items-center gap-[5px]">
-          <span
-            aria-hidden
-            className={`size-1.5 shrink-0 rounded-full ${dotClassNames?.[round] ?? 'bg-teal-300'}`}
-          />
+          <DotBadge size="sm" className={dotClassNames?.[round]} />
           <span className="text-teal-grey-600">
             {round}차 {label}
           </span>

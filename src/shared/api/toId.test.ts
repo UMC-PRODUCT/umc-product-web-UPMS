@@ -1,4 +1,15 @@
-import { toId } from './toId';
+import { toCount, toId } from './toId';
+
+describe('toCount', () => {
+  it.each<[unknown, number]>([
+    ['52', 52],
+    [52, 52],
+    [undefined, 0],
+    ['abc', 0],
+  ])('%j → %j', (value, expected) => {
+    expect(toCount(value)).toBe(expected);
+  });
+});
 
 describe('toId', () => {
   it.each<[unknown, number | null]>([
