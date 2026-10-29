@@ -148,7 +148,13 @@ const getDescription = (role: Role, view: View): string => {
 };
 
 // 프로젝트 없을 시
-const EmptyState = ({ showRegisterButton }: { showRegisterButton: boolean }) => (
+const EmptyState = ({
+  showRegisterButton,
+  onRegister,
+}: {
+  showRegisterButton: boolean;
+  onRegister?: () => void;
+}) => (
   <div className="flex flex-col items-center gap-6 py-20">
     <EmptyDocumentIcon width={56} height={56} className="text-teal-grey-200" />
     <div className="flex flex-col items-center gap-2">
@@ -158,7 +164,7 @@ const EmptyState = ({ showRegisterButton }: { showRegisterButton: boolean }) => 
       </p>
     </div>
     {showRegisterButton && (
-      <Button size="sm">
+      <Button size="sm" onClick={onRegister}>
         <div className="flex items-center gap-2">
           <AddIcon size={16} />
           프로젝트 등록
@@ -244,7 +250,11 @@ const ProjectsPage = () => {
             <ChapterSelectHeader value={chapterId} onValueChange={setChapterId} />
           )}
           {role !== 'HQ_ADMIN' && (
-            <Button size="sm" className="ml-auto h-11 shrink-0">
+            <Button
+              size="sm"
+              className="ml-auto h-11 shrink-0"
+              onClick={() => navigate({ to: '/demo-day/project-settings/projects/new' })}
+            >
               <div className="flex items-center gap-2">
                 <AddIcon size={16} />
                 프로젝트 등록
@@ -255,7 +265,10 @@ const ProjectsPage = () => {
 
         {projects.length === 0 ? (
           <div className="flex min-h-[400px] w-full items-center justify-center rounded-xl border border-teal-grey-100 bg-white shadow-drop-neutral-3">
-            <EmptyState showRegisterButton={isPmChallenger} />
+            <EmptyState
+              showRegisterButton={isPmChallenger}
+              onRegister={() => navigate({ to: '/demo-day/project-settings/projects/new' })}
+            />
           </div>
         ) : isPmChallenger ? (
           <ul className="mt-2 flex flex-col gap-[10px]">
