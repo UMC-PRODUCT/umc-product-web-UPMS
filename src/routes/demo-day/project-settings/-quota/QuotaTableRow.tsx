@@ -42,7 +42,12 @@ const QuotaTableRow = ({
 
       {columns.map((col) => {
         const part = col.part!;
-        const isDisabled = values?.[part] === undefined;
+        const webPeQuota = values?.['WEB_PRODUCT_ENGINEER'] ?? 0;
+        const mobilePeQuota = values?.['MOBILE_PRODUCT_ENGINEER'] ?? 0;
+        const isPeConflict =
+          (part === 'WEB_PRODUCT_ENGINEER' && mobilePeQuota > 0) ||
+          (part === 'MOBILE_PRODUCT_ENGINEER' && webPeQuota > 0);
+        const isDisabled = values?.[part] === undefined || isPeConflict;
         const isLocked = col.canEdit?.allowed === false;
         const isEditing = editingCell?.projectId === projectId && editingCell?.part === part;
 
