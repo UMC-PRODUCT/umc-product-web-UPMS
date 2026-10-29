@@ -8,7 +8,8 @@ import type {
 } from '../model/types';
 
 const FULL_ACCESS_ROLES: Role[] = ['SUPER_ADMIN', 'HQ_LEAD', 'HQ_ADMIN', 'CHAPTER_ADMIN'];
-const BASIC_ACCESS_ROLES: Role[] = ['SCHOOL_ADMIN', 'SCHOOL_STAFF', 'CHALLENGER_PM'];
+// 11기 권한표: 학교회장단 · 학교운영진은 프로젝트 설정 접근 불가, PM은 본인 프로젝트 관리만
+const BASIC_ACCESS_ROLES: Role[] = ['CHALLENGER_PM'];
 
 // 챌린저를 겸할 수 있는 운영진. challengerType이 있으면 뷰 전환이 생긴다.
 const VIEW_SWITCHABLE_ROLES: Role[] = ['HQ_ADMIN', 'CHAPTER_ADMIN', 'SCHOOL_ADMIN', 'SCHOOL_STAFF'];
@@ -87,17 +88,36 @@ export const canManageMatching = (
   return false;
 };
 
-// 피그마 매칭 차수 설정 '지부 선택': 다른 지부를 고를 수 있는지 · 일정을 바꿀 수 있는지
+// 11기 권한표 '매칭 차수 설정': 볼 수 있는 지부 · 일정을 바꿀 수 있는 지부
 // - 마스터(SUPER_ADMIN · HQ_LEAD): 전 지부 설정 · 수정 / 중앙운영진: 전 지부 조회만
-// - 지부장: 소속 지부만 (다른 지부는 고를 수 없음)
+// - 지부장: 전 지부 조회, 소속 지부만 설정
 // 1차 매칭이 시작됐는지는 따로 확인
-export const getMatchingScheduleAccess = (
+export type MatchingScheduleAccess = {
+  chapterScope: ChapterScope; // 고를 수 있는 지부
+  editScope: ChapterScope | 'NONE'; // 일정을 바꿀 수 있는 지부
+};
+
+export const getMatchingScheduleAccess = (role: Role): MatchingScheduleAccess => {
+  if (role === 'SUPER_ADMIN' || role === 'HQ_LEAD')
+    return { chapterScope: 'ALL', editScope: 'ALL' };
+  if (role === 'HQ_ADMIN') return { chapterScope: 'ALL', editScope: 'NONE' };
+  if (role === 'CHAPTER_ADMIN') return { chapterScope: 'ALL', editScope: 'OWN' };
+  return { chapterScope: 'OWN', editScope: 'NONE' };
+};
+
+// 11기 권한표 '지원 현황' (어드민 뷰): 지원자 목록 · 지원서를 볼 수 있는지
+// - 마스터 · 지부장: 지원자 목록 조회 · 지원서 열람
+// - 중앙운영진: 지원자 목록 조회만 (지원서 열람 불가)
+// - 학교회장단 · 학교운영진: 지원 통계만 (지원자 목록 조회 불가)
+// 합격 · 불합격 판정은 서버 권한(canDecide)으로 따로 확인
+export const getApplicationsAccess = (
   role: Role,
-): { chapterScope: ChapterScope; editable: boolean } => {
-  if (role === 'SUPER_ADMIN' || role === 'HQ_LEAD') return { chapterScope: 'ALL', editable: true };
-  if (role === 'HQ_ADMIN') return { chapterScope: 'ALL', editable: false };
-  if (role === 'CHAPTER_ADMIN') return { chapterScope: 'OWN', editable: true };
-  return { chapterScope: 'OWN', editable: false };
+): { canReadApplicants: boolean; canReadApplication: boolean } => {
+  if (['SUPER_ADMIN', 'HQ_LEAD', 'CHAPTER_ADMIN'].includes(role)) {
+    return { canReadApplicants: true, canReadApplication: true };
+  }
+  if (role === 'HQ_ADMIN') return { canReadApplicants: true, canReadApplication: false };
+  return { canReadApplicants: false, canReadApplication: false };
 };
 
 export const getProjectSettingsAccess = (role: Role, view: View): ProjectSettingsAccess => {

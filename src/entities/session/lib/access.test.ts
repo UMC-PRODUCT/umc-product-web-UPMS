@@ -3,6 +3,7 @@ import {
   canEditApplicantStatus,
   canManageMatching,
   canManageNotice,
+  getApplicationsAccess,
   getApplicationsView,
   getChapterScope,
   getMatchingScheduleAccess,
@@ -95,13 +96,27 @@ describe('canManageMatching', () => {
 });
 
 describe('getMatchingScheduleAccess', () => {
-  it.each<[Role, 'ALL' | 'OWN', boolean]>([
-    ['SUPER_ADMIN', 'ALL', true],
-    ['HQ_LEAD', 'ALL', true],
-    ['HQ_ADMIN', 'ALL', false],
-    ['CHAPTER_ADMIN', 'OWN', true],
-  ])('%s는 %s 지부를 보고, 수정 가능 여부는 %s', (role, chapterScope, editable) => {
-    expect(getMatchingScheduleAccess(role)).toEqual({ chapterScope, editable });
+  it.each<[Role, 'ALL' | 'OWN', 'ALL' | 'OWN' | 'NONE']>([
+    ['SUPER_ADMIN', 'ALL', 'ALL'],
+    ['HQ_LEAD', 'ALL', 'ALL'],
+    ['HQ_ADMIN', 'ALL', 'NONE'],
+    ['CHAPTER_ADMIN', 'ALL', 'OWN'],
+    ['SCHOOL_ADMIN', 'OWN', 'NONE'],
+  ])('%s는 %s 지부를 보고, %s 지부 일정을 바꿀 수 있다', (role, chapterScope, editScope) => {
+    expect(getMatchingScheduleAccess(role)).toEqual({ chapterScope, editScope });
+  });
+});
+
+describe('getApplicationsAccess', () => {
+  it.each<[Role, boolean, boolean]>([
+    ['SUPER_ADMIN', true, true],
+    ['HQ_LEAD', true, true],
+    ['CHAPTER_ADMIN', true, true],
+    ['HQ_ADMIN', true, false],
+    ['SCHOOL_ADMIN', false, false],
+    ['SCHOOL_STAFF', false, false],
+  ])('%s: 지원자 목록 %s, 지원서 열람 %s', (role, canReadApplicants, canReadApplication) => {
+    expect(getApplicationsAccess(role)).toEqual({ canReadApplicants, canReadApplication });
   });
 });
 
@@ -111,8 +126,8 @@ describe('getProjectSettingsAccess', () => {
     ['HQ_LEAD', 'FULL'],
     ['HQ_ADMIN', 'FULL'],
     ['CHAPTER_ADMIN', 'FULL'],
-    ['SCHOOL_ADMIN', 'BASIC'],
-    ['SCHOOL_STAFF', 'BASIC'],
+    ['SCHOOL_ADMIN', 'NONE'],
+    ['SCHOOL_STAFF', 'NONE'],
     ['CHALLENGER_PM', 'BASIC'],
     ['CHALLENGER', 'NONE'],
   ])('Admin View에서 %s는 %s', (role, expected) => {

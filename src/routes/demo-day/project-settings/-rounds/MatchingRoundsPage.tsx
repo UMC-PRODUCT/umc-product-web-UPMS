@@ -10,6 +10,7 @@ import {
   calculateSchedule,
   isAnnounceTimeAllowed,
   isScheduleLocked,
+  isStartDateAllowed,
   isValidTime,
   type MatchingScheduleSetting,
   type MatchingTrack,
@@ -52,6 +53,8 @@ const TOAST_MESSAGE = {
   saved: '매칭 차수가 저장되었어요',
   // TODO: 피그마 토스트 케이스에 없는 문구. 기획 확인 필요
   announceTooEarly: `매칭 결과발표는 ${MIN_ANNOUNCE_TIME} 이후로 설정해 주세요`,
+  // TODO: 피그마 토스트 케이스에 없는 문구. 기획 확인 필요
+  startDatePast: '매칭 시작일은 내일 이후로 설정해 주세요',
 };
 
 const ROUND_TITLE: Record<ScheduleRound, string> = {
@@ -84,17 +87,20 @@ const isInvalidTime = (value: string | null) => value?.length === 5 && !isValidT
 // 피그마 매칭 차수 설정: Plan - Design / Plan - PE 탭 + 01 기본 매칭 일정 + 02 차수별 일정 설정
 const MatchingRoundsPage = () => {
   const ownChapterId = useSessionStore((state) => state.session.serverChapterId);
-  const { chapterScope, editable } = useMatchingScheduleAccess();
+  const { chapterScope, editScope } = useMatchingScheduleAccess();
   const toast = useAppToast();
   const [now] = useState(() => new Date());
 
   const gisuId = useSessionStore((state) => state.session.gisuId);
   const { data: chapters = [], isError: chaptersError } = useChapters(gisuId);
 
-  // 고르기 전: 지부장은 소속 지부, 전 지부를 보는 역할(총괄단 · 슈퍼어드민 · 중앙 운영진)은 첫 지부
-  const defaultChapterId = chapterScope === 'OWN' ? ownChapterId : (chapters[0]?.id ?? null);
+  // 고르기 전: 지부장(소속 지부만 수정) · 소속 지부만 보는 역할은 소속 지부, 그 외(총괄단 · 슈퍼어드민 · 중앙 운영진)는 첫 지부
+  const defaultChapterId =
+    chapterScope === 'OWN' || editScope === 'OWN' ? ownChapterId : (chapters[0]?.id ?? null);
   const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
   const chapterId = selectedChapterId ?? defaultChapterId;
+  // 권한표: 마스터는 전 지부, 지부장은 소속 지부만 수정 (다른 지부는 조회만)
+  const editable = editScope === 'ALL' || (editScope === 'OWN' && chapterId === ownChapterId);
   const [track, setTrack] = useState<MatchingTrack>('PLAN_DESIGN');
 
   const rounds = useMatchingRounds(chapterId ?? undefined);
@@ -143,6 +149,11 @@ const MatchingRoundsPage = () => {
 
   // 자동 계산 칸은 시작일을 넣어야 채워짐
   const handleDisabledFieldClick = () => {
+    // 지부장이 다른 지부 일정을 고치려고 하면 안내
+    if (editScope === 'OWN' && chapterId !== ownChapterId) {
+      toast.show(TOAST_MESSAGE.otherChapter, { color: 'error' });
+      return;
+    }
     if (canEdit && !parseDate(draft.startDate)) {
       toast.show(TOAST_MESSAGE.startDateFirst, { color: 'error' });
     }
@@ -155,6 +166,11 @@ const MatchingRoundsPage = () => {
     }
     if (!isAnnounceTimeAllowed(draft.announceTime)) {
       toast.show(TOAST_MESSAGE.announceTooEarly, { color: 'error' });
+      return;
+    }
+    // 오늘 이전에 시작하면 서버가 1차부터 거절하고, 차수를 하나씩 저장하다 일부만 남을 수 있어 미리 막음
+    if (!isStartDateAllowed(draft.startDate, new Date())) {
+      toast.show(TOAST_MESSAGE.startDatePast, { color: 'error' });
       return;
     }
     if (chapterId === null || currentKey === null || !rounds.data) return;
@@ -182,7 +198,8 @@ const MatchingRoundsPage = () => {
         breadcrumbs={BREADCRUMBS}
         title="매칭 차수 설정"
         description={
-          editable
+          // 고른 지부가 아니라 역할 기준 (지부장은 다른 지부를 볼 때도 설정 안내)
+          editScope !== 'NONE'
             ? '지부별 매칭 일정과 차수별 지원 기간을 설정해요. 1차 매칭이 시작되면 매칭 일정을 변경할 수 없어요.'
             : '지부별 매칭 일정을 확인 할 수 있어요.'
         }

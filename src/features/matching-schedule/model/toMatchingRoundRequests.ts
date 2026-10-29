@@ -43,6 +43,13 @@ export const MIN_ANNOUNCE_TIME = '20:05';
 export const isAnnounceTimeAllowed = (announceTime: string | null) =>
   announceTime !== null && announceTime >= MIN_ANNOUNCE_TIME;
 
+// 서버 규칙: 시작 시각이 이미 지난 차수는 만들 수 없음 (1차 매칭이 시작된 것으로 봄)
+// 1차는 시작일 0시에 시작하므로 시작일은 내일 이후여야 함
+export const isStartDateAllowed = (startDate: string | null, now: Date) => {
+  const start = startDate ? parseDate(startDate) : null;
+  return start !== null && start > now;
+};
+
 // 로컬(KST) 날짜 · 시각을 서버로 보낼 ISO 문자열로
 const toIso = ({ date, time }: ScheduleDateTime) => {
   const day = parseDate(date);
