@@ -286,6 +286,12 @@ const ProjectsPage = () => {
                               onViewApplications={() =>
                                 navigate({ to: '/demo-day/team-matching/applications' })
                               }
+                              onManageApproval={() =>
+                                navigate({
+                                  to: '/demo-day/project-settings/projects/$projectId',
+                                  params: { projectId: project.projectId },
+                                })
+                              }
                               onDelete={() => setDeleteTarget(project)}
                             />
                           </li>
@@ -308,6 +314,12 @@ const ProjectsPage = () => {
                               onCardClick={() => setSelectedProject(project)}
                               onViewApplications={() =>
                                 navigate({ to: '/demo-day/team-matching/applications' })
+                              }
+                              onManageApproval={() =>
+                                navigate({
+                                  to: '/demo-day/project-settings/projects/$projectId',
+                                  params: { projectId: project.projectId },
+                                })
                               }
                               onDelete={() => setDeleteTarget(project)}
                             />
