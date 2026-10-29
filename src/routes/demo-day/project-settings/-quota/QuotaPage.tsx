@@ -143,6 +143,17 @@ const QuotaPage = () => {
       return;
     }
 
+    const isBelowMinimum = projects.some((p) =>
+      (p.cells ?? []).some((cell) => {
+        const draftQuota = draft[String(p.projectId!)]?.[cell.part!] ?? 0;
+        return draftQuota < (cell.minimumQuota ?? 0);
+      }),
+    );
+    if (isBelowMinimum) {
+      toast.show('최소 정원보다 배정 인원이 부족해요.', { color: 'error' });
+      return;
+    }
+
     type CellPart = SavePartQuotasRequest['projects'][0]['entries'][0]['part'];
 
     const changedProjects = Object.entries(draft)
@@ -241,79 +252,81 @@ const QuotaPage = () => {
           </div>
 
           <div className="mt-8 overflow-hidden rounded-xl border border-teal-grey-200">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="flex bg-teal-grey-100">
-                  <th className="flex w-[170px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1 border border-t-0 border-l-0 border-teal-300 bg-teal-50">
-                    <span className="text-heading-3-semibold leading-[1.4] tracking-[-0.4px] text-teal-600">
-                      {data?.chapterName ?? ''} 지부
-                    </span>
-                    <span className="text-body-2-medium leading-normal tracking-[-0.15px] text-teal-grey-500">
-                      총 {data?.totalProjectCount ?? 0}개 팀
-                    </span>
-                  </th>
-                  {columns.map((col) => (
-                    <th
-                      key={col.part}
-                      className="flex w-[186.75px] shrink-0 flex-col items-center justify-center gap-1 border-b-2 border-teal-500 bg-teal-50 pt-3 pb-4"
-                    >
-                      <span className="text-title-2-semibold leading-[1.4] tracking-[-0.2px] text-neutral-strong-800">
-                        {col.label}
+            <div className="overflow-x-auto">
+              <table className="w-auto min-w-full border-collapse">
+                <thead>
+                  <tr className="flex bg-teal-grey-100">
+                    <th className="flex w-[170px] shrink-0 cursor-pointer flex-col items-center justify-center gap-1 border border-t-0 border-l-0 border-teal-300 bg-teal-50">
+                      <span className="text-heading-3-semibold leading-[1.4] tracking-[-0.4px] text-teal-600">
+                        {data?.chapterName ?? ''} 지부
                       </span>
-                      <span className="text-heading-4-semibold leading-[1.4] tracking-[-0.36px] text-teal-600">
-                        {partTotal(col.part!)}명
+                      <span className="text-body-2-medium leading-normal tracking-[-0.15px] text-teal-grey-500">
+                        총 {data?.totalProjectCount ?? 0}개 팀
                       </span>
                     </th>
-                  ))}
-                  <th className="flex flex-1 cursor-pointer flex-col items-center justify-center border border-t-0 border-r-0 border-teal-grey-300 bg-fill-neutral-medium-100 pt-3 pb-4">
-                    <span className="text-[20px] leading-[1.4] font-semibold tracking-[-0.2px] whitespace-nowrap text-teal-grey-800">
-                      합계 인원
-                    </span>
-                  </th>
-                </tr>
-              </thead>
-            </table>
+                    {columns.map((col) => (
+                      <th
+                        key={col.part}
+                        className="flex w-[186.75px] shrink-0 flex-col items-center justify-center gap-1 border-b-2 border-teal-500 bg-teal-50 pt-3 pb-4"
+                      >
+                        <span className="text-title-2-semibold leading-[1.4] tracking-[-0.2px] text-neutral-strong-800">
+                          {col.label}
+                        </span>
+                        <span className="text-heading-4-semibold leading-[1.4] tracking-[-0.36px] text-teal-600">
+                          {partTotal(col.part!)}명
+                        </span>
+                      </th>
+                    ))}
+                    <th className="flex min-w-[150px] flex-1 cursor-pointer flex-col items-center justify-center border border-t-0 border-r-0 border-teal-grey-300 bg-fill-neutral-medium-100 pt-3 pb-4">
+                      <span className="text-[20px] leading-[1.4] font-semibold tracking-[-0.2px] whitespace-nowrap text-teal-grey-800">
+                        합계 인원
+                      </span>
+                    </th>
+                  </tr>
+                </thead>
+              </table>
 
-            <div className="max-h-[510px] scrollbar-none overflow-y-auto">
-              {isError ? (
-                <div className="flex w-full flex-col items-center justify-center gap-2 py-[74px] text-teal-grey-600">
-                  <h3 className="text-body-1-semibold">데이터를 불러오지 못했어요</h3>
-                  <p className="text-body-3-regular">잠시 후 다시 시도해 주세요.</p>
-                </div>
-              ) : (
-                <>
-                  <table className="w-full border-collapse">
-                    <tbody>
-                      {projects.map((project) => (
-                        <QuotaTableRow
-                          key={project.projectId}
-                          project={project}
-                          values={draft[String(project.projectId!)]}
-                          columns={columns}
-                          editingCell={editingCell}
-                          inputRef={inputRef}
-                          canEdit={canEdit}
-                          onCellClick={handleCellClick}
-                          onCellChange={handleCellChange}
-                          onCellBlur={handleCellBlur}
-                        />
-                      ))}
-                    </tbody>
-                  </table>
+              <div className="max-h-[510px] scrollbar-none overflow-y-auto">
+                {isError ? (
+                  <div className="flex w-full flex-col items-center justify-center gap-2 py-[74px] text-teal-grey-600">
+                    <h3 className="text-body-1-semibold">데이터를 불러오지 못했어요</h3>
+                    <p className="text-body-3-regular">잠시 후 다시 시도해 주세요.</p>
+                  </div>
+                ) : (
+                  <>
+                    <table className="w-auto min-w-full border-collapse">
+                      <tbody>
+                        {projects.map((project) => (
+                          <QuotaTableRow
+                            key={project.projectId}
+                            project={project}
+                            values={draft[String(project.projectId!)]}
+                            columns={columns}
+                            editingCell={editingCell}
+                            inputRef={inputRef}
+                            canEdit={canEdit}
+                            onCellClick={handleCellClick}
+                            onCellChange={handleCellChange}
+                            onCellBlur={handleCellBlur}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
 
-                  {projects.length === 0 && (
-                    <div className="flex flex-col items-center justify-center gap-2 py-[74px] text-teal-grey-600">
-                      <h3 className="text-body-1-semibold">검색 결과가 없어요</h3>
-                      <p className="text-body-3-regular">
-                        프로젝트명을 확인하고 다시 검색해 보세요.
-                      </p>
-                    </div>
-                  )}
-                </>
-              )}
+                    {projects.length === 0 && (
+                      <div className="flex flex-col items-center justify-center gap-2 py-[74px] text-teal-grey-600">
+                        <h3 className="text-body-1-semibold">검색 결과가 없어요</h3>
+                        <p className="text-body-3-regular">
+                          프로젝트명을 확인하고 다시 검색해 보세요.
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <QuotaTableFooter columns={columns} partTotal={partTotal} partQuota={partQuota} />
             </div>
-
-            <QuotaTableFooter columns={columns} partTotal={partTotal} partQuota={partQuota} />
           </div>
         </section>
       </div>
