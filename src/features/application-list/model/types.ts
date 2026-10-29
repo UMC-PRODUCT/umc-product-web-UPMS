@@ -16,7 +16,7 @@ export type PartRecruitments = { DESIGN: PartRecruitment } & (
 );
 
 export type ProjectApplicationRow = {
-  projectId: string;
+  projectId: number;
   projectName: string;
   part: PartTagPart;
   challengerName: string; // 닉네임/이름
@@ -34,7 +34,10 @@ export type ProjectCoPm = {
 export type ApplicantStatus = 'PASSED' | 'WAITING' | 'FAILED';
 
 export type Applicant = {
-  applicantId: string;
+  applicantId: string; // 목록 key · 선택 상태용 (지원서 ID를 문자열로)
+  applicationId: number; // 지원서 상세 · 배정 상태 변경 API에 씀
+  matchingRoundId: number | null; // 지원한 매칭 차수 (결정 기간인지 확인용)
+  memberId: number | null; // 지원자 회원 ID (매칭 결과 시트의 팀원과 지원서를 잇는 데 씀)
   round: 1 | 2 | 3;
   part: PartTagPart;
   challengerName: string; // 닉네임/이름
@@ -52,7 +55,6 @@ export type ProjectApplicationGroup = {
   applicants: Applicant[];
 };
 
-export type ApplicationFilterKey =
-  'chapter' | 'school' | 'part' | 'round' | 'recruitStatus' | 'applyStatus';
+export type ApplicationFilterKey = 'school' | 'part' | 'round' | 'recruitStatus';
 
 export type ApplicationFilterValues = Record<ApplicationFilterKey, string[]>; // 빈 배열이면 전체
