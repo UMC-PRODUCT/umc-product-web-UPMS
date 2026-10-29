@@ -3,7 +3,6 @@ export { useCancelApplication } from './hooks/useCancelApplication';
 export { useMyApplications } from './hooks/useMyApplications';
 export { useProjectDetail } from './hooks/useProjectDetail';
 export { getVisibleRecruitments } from './model/getVisibleRecruitments';
-export { MOCK_MY_APPLICATION } from './model/mockMyApplication';
 export { toAppliedRoundGroups } from './model/toAppliedRoundGroups';
 export type {
   ApplicationAnswer,
