@@ -5,52 +5,58 @@ import { useState } from 'react';
 import {
   type PartMatching,
   type ProjectMatchingResult,
-  type UnassignedChallenger,
   UnassignedChallengerSheet,
+  useAssignProjectMember,
+  useMatchingCandidates,
 } from '@/features/matching-status';
+import { useDebouncedValue } from '@/shared/lib/useDebouncedValue';
 import NoticeDialog from '@/shared/ui/NoticeDialog';
 import UpmsPanel from '@/shared/ui/UpmsPanel';
 import { SearchBar } from '@/widgets/searchBar';
+import { useAppToast } from '@/widgets/toast';
+
+// 글자마다 요청하지 않도록 입력이 멈추면(300ms) 검색, 계속 입력해도 1초마다는 중간 결과
+const SEARCH_DEBOUNCE = { delay: 300, maxWait: 1000 };
 
 type ManualAssignModalProps = {
   target: { project: ProjectMatchingResult; part: PartMatching } | null; // null이면 닫힘
-  challengers: UnassignedChallenger[]; // 아직 배정되지 않은 챌린저 전체
   onClose: () => void;
-  onAssign: (challenger: UnassignedChallenger) => void; // 해당 프로젝트 · 파트에 배정
 };
 
 // 피그마 팀원 수동 배정 모달: 매칭 결과 시트의 빈 칸에서 열림
-// 처음엔 검색바만, 검색하면 빈 칸의 파트에 맞는 미배정 챌린저만 보여 주고 한 명을 골라 배정 → 배정 완료 안내
-const ManualAssignModal = ({ target, challengers, onClose, onAssign }: ManualAssignModalProps) => {
+// 처음엔 검색바만, 검색하면 빈 칸의 파트에 맞는 미배정 챌린저(서버 후보 조회)를 보여 주고 한 명을 골라 배정 → 배정 완료 안내
+const ManualAssignModal = ({ target, onClose }: ManualAssignModalProps) => {
   const [keyword, setKeyword] = useState('');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  // 배정 직후 목록. 배정 완료 안내가 떠 있는 동안 뒤 목록이 바뀌지 않게 붙잡아 둠 (null이면 배정 전)
-  const [assignedSnapshot, setAssignedSnapshot] = useState<UnassignedChallenger[] | null>(null);
+  const searchKeyword = useDebouncedValue(keyword, SEARCH_DEBOUNCE);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [assigned, setAssigned] = useState(false);
+  const toast = useAppToast();
 
-  const trimmedKeyword = keyword.trim();
-  // 빈 칸의 파트 + 검색어(닉네임 · 이름 · 학교 일부)로 거름
-  const candidates =
-    assignedSnapshot ??
-    (target
-      ? challengers.filter(
-          ({ part, challengerName, schoolName }) =>
-            part === target.part.part &&
-            (challengerName.includes(trimmedKeyword) || schoolName.includes(trimmedKeyword)),
-        )
-      : []);
-  const selected = candidates.find(({ challengerId }) => challengerId === selectedId);
+  const candidates = useMatchingCandidates(
+    target && { projectId: target.project.projectId, part: target.part.part },
+    searchKeyword,
+  );
+  const assign = useAssignProjectMember();
+  const challengers = candidates.data ?? [];
+  const selected = challengers.find(({ memberId }) => memberId === selectedId);
 
   const close = () => {
     setKeyword('');
     setSelectedId(null);
-    setAssignedSnapshot(null);
+    setAssigned(false);
     onClose();
   };
 
   const handleAssign = () => {
-    if (!selected) return;
-    setAssignedSnapshot(candidates);
-    onAssign(selected);
+    if (!target || !selected) return;
+    assign.mutate(
+      { projectId: target.project.projectId, memberId: selected.memberId, part: target.part.part },
+      {
+        onSuccess: () => setAssigned(true),
+        // 정원 초과 · 중복 배정 등 서버가 거절한 사유를 보여 줌
+        onError: (error) => toast.show(error.message, { color: 'error' }),
+      },
+    );
   };
 
   return (
@@ -83,8 +89,14 @@ const ManualAssignModal = ({ target, challengers, onClose, onAssign }: ManualAss
       }
     >
       {/* 피그마 기본 상태: 검색 전에는 목록 없이 검색바만 */}
-      {trimmedKeyword !== '' &&
-        (candidates.length === 0 ? (
+      {/* TODO: 불러오기 실패 화면이 피그마에 나오면 교체 */}
+      {candidates.isError && (
+        <p role="alert" className="text-body-3-medium text-red-500">
+          {candidates.error.message}
+        </p>
+      )}
+      {candidates.isSuccess &&
+        (challengers.length === 0 ? (
           <p className="flex flex-1 items-center justify-center text-body-2-medium text-teal-grey-400">
             배정할 수 있는 챌린저가 없어요.
           </p>
@@ -92,18 +104,23 @@ const ManualAssignModal = ({ target, challengers, onClose, onAssign }: ManualAss
           <div className="flex min-h-0 flex-1 flex-col items-center gap-12">
             <div className="flex min-h-0 w-full flex-1 flex-col">
               <UnassignedChallengerSheet
-                challengers={candidates}
+                challengers={challengers}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
               />
             </div>
-            <Button size="md" disabled={!selected} onClick={handleAssign} className="w-[176px]">
+            <Button
+              size="md"
+              disabled={!selected || assign.isPending}
+              onClick={handleAssign}
+              className="w-[176px]"
+            >
               해당 프로젝트에 배정
             </Button>
           </div>
         ))}
       <NoticeDialog
-        open={assignedSnapshot !== null}
+        open={assigned}
         onConfirm={close}
         icon={<CheckPictogram size={24} />}
         title="배정 완료"

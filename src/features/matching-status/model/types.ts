@@ -26,12 +26,14 @@ export type RoundMatching = {
 
 // 매칭 결과 시트: 파트 자리에 매칭된 챌린저
 export type MatchedMember = {
-  memberId: string;
+  memberId: number;
   challengerName: string; // 닉네임/이름
   schoolName: string;
-  round: RoundMatchingKey; // 매칭된 차수
-  matchedAt: string; // ISO 시각 (매칭 해제 확인창 "MM월 DD일 HH시에 매칭된 챌린저예요")
-  submittedAt: string | null; // 지원서 제출 시각, 지원 없이 수동 배정됐으면 null
+  round: RoundMatchingKey; // 매칭된 차수 (지원 없이 수동 배정됐으면 랜덤 매칭과 같이 R)
+  // ISO 시각 (매칭 해제 확인창 "MM월 DD일 HH시에 매칭된 챌린저예요"). API에 없으면 null
+  // TODO: 백엔드에 팀원 구성 응답의 매칭 시각 · 지원서 제출 시각 추가 요청
+  matchedAt: string | null;
+  submittedAt: string | null; // 지원서 제출 시각, 모르거나 지원 없이 수동 배정됐으면 null
 };
 
 // 모집 파트 (PE는 서비스 플랫폼에 따라 Web 또는 Mobile)
@@ -47,7 +49,7 @@ export type PartMatching = {
 
 // 매칭 결과 시트의 프로젝트 한 줄
 export type ProjectMatchingResult = {
-  projectId: string;
+  projectId: number;
   projectName: string;
   pmName: string; // 닉네임/이름
   pmSchoolName: string;
@@ -71,7 +73,7 @@ export type ProjectMatchings = {
 
 // 팀원 수동 배정: 아직 어느 프로젝트에도 배정되지 않은 챌린저
 export type UnassignedChallenger = {
-  challengerId: string;
+  memberId: number; // 수동 배정 API에 보냄
   challengerName: string; // 닉네임/이름
   schoolName: string;
   part: MatchingPart;
