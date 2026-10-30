@@ -23,9 +23,11 @@ const useObjectUrl = (file: File | null) => {
 
 type ProjectEditorCardProps = {
   thumbnail: File | null;
+  thumbnailUrl: string; // 서버에 저장된 썸네일 주소 (새 파일을 고르기 전까지 보여줌)
   onThumbnailChange: (file: File) => void;
   onThumbnailReject: (rejection: ImageThumbnailEditorRejection) => void;
   logo: File | null; // 02 프로젝트 정보 등록에서 올린 로고
+  logoUrl: string;
   name: string;
   description: string;
   pmLabel: string; // 닉네임/이름 · 학교
@@ -34,20 +36,23 @@ type ProjectEditorCardProps = {
 // 피그마 Project Editor Card: 챌린저에게 보이는 프로젝트 카드 미리보기. 썸네일만 여기서 올리고 나머지는 02에서 입력한 값이 보임
 const ProjectEditorCard = ({
   thumbnail,
+  thumbnailUrl,
   onThumbnailChange,
   onThumbnailReject,
   logo,
+  logoUrl: savedLogoUrl,
   name,
   description,
   pmLabel,
 }: ProjectEditorCardProps) => {
-  const logoUrl = useObjectUrl(logo);
+  const logoUrl = useObjectUrl(logo) ?? (savedLogoUrl || null);
 
   return (
     <article className="flex w-[648px] max-w-full flex-col overflow-hidden rounded-[20px] border border-teal-grey-100 bg-white shadow-drop-neutral-3">
       <ImageThumbnailEditor
         aria-label="프로젝트 카드 썸네일"
         value={thumbnail}
+        src={thumbnailUrl || undefined}
         onValueChange={onThumbnailChange}
         onReject={onThumbnailReject}
         accept={['image/jpeg', 'image/png']}

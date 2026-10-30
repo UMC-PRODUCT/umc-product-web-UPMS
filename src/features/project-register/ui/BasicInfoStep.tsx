@@ -53,9 +53,11 @@ const BasicInfoStep = ({
         <div className="flex items-start gap-5 pl-[38px]">
           <ProjectEditorCard
             thumbnail={draft.thumbnail}
+            thumbnailUrl={draft.thumbnailUrl}
             onThumbnailChange={(thumbnail) => onChange({ thumbnail })}
             onThumbnailReject={onThumbnailReject}
             logo={draft.logo}
+            logoUrl={draft.logoUrl}
             name={draft.name}
             description={draft.description}
             pmLabel={pmLabel}
@@ -80,6 +82,7 @@ const BasicInfoStep = ({
           <ImageThumbnailEditor
             aria-label="프로젝트 로고"
             value={draft.logo}
+            src={draft.logoUrl || undefined}
             onValueChange={(logo) => onChange({ logo })}
             onReject={onLogoReject}
             maxSize={LOGO_MAX_SIZE}
