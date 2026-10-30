@@ -177,7 +177,7 @@ const MatchingRoundsPage = () => {
 
     const key = currentKey;
     save.mutate(
-      { chapterId, track, setting: draft, existingRounds: rounds.data },
+      { chapterId, track, setting: draft },
       {
         // 저장한 일정을 다시 불러온 뒤라 고친 값을 지워도 저장한 값이 보임
         onSuccess: () => {

@@ -1,5 +1,4 @@
-import type { components } from '@/types/api';
-
+import type { SaveMatchingRoundsBody } from '../api/saveMatchingRounds';
 import { calculateSchedule } from './calculateSchedule';
 import { addDays, parseDate, toDateString } from './scheduleFormat';
 import type {
@@ -9,14 +8,10 @@ import type {
   ScheduleRound,
 } from './types';
 
-type MatchingRoundRequest = Omit<
-  components['schemas']['CreateProjectMatchingRoundRequest'],
-  'chapterId'
->;
-type Phase = NonNullable<MatchingRoundRequest['phase']>;
+type Phase = SaveMatchingRoundsBody['rounds'][number]['phase'];
 
 // 화면 탭 → 서버 type (서버는 PE를 DEVELOPER로 부름)
-const SERVER_TRACK: Record<MatchingTrack, NonNullable<MatchingRoundRequest['type']>> = {
+const SERVER_TRACK: Record<MatchingTrack, SaveMatchingRoundsBody['type']> = {
   PLAN_DESIGN: 'PLAN_DESIGN',
   PLAN_PE: 'PLAN_DEVELOPER',
 };
@@ -64,30 +59,33 @@ const nextDay = (date: string) => {
   return toDateString(addDays(day, 1));
 };
 
-// 입력값(시작일 · 발표 시각)으로 서버에 저장할 차수 4개를 만듦. 기간은 화면의 자동 계산과 같음
+// 입력값(시작일 · 발표 시각)으로 일괄 저장할 차수 4개를 만듦. 기간은 화면의 자동 계산과 같음
 // 1~3차: 지원 기간 → 다음 날 20:00 PM 판정 마감 → 다음 날 발표
-// 랜덤 매칭: 00:00 ~ 20:00 운영진 배정(마감 = 끝) → 같은 날 발표
-export const toMatchingRoundRequests = (
+// 랜덤 매칭: 00:00 ~ 20:00 운영진 배정 → 같은 날 발표 (판정 마감은 보내지 않고 서버가 끝 시각으로 저장)
+// 입력값이 모자라면 null
+export const toMatchingRoundsBody = (
   setting: MatchingScheduleSetting,
   track: MatchingTrack,
-): MatchingRoundRequest[] => {
+): SaveMatchingRoundsBody | null => {
   const schedule = calculateSchedule(setting);
   const { announceTime } = setting;
-  if (!schedule || !announceTime) return [];
+  if (!schedule || !announceTime) return null;
 
-  return schedule.rounds.map(({ round, period }) => {
-    const isRandom = round === 'RANDOM';
-    const decisionDate = isRandom ? period.end.date : nextDay(period.end.date);
-    return {
-      name: isRandom ? `${TRACK_NAME[track]} 랜덤 매칭` : `${TRACK_NAME[track]} ${round}차`,
-      type: SERVER_TRACK[track],
-      phase: PHASE[round],
-      startsAt: toIso(period.start),
-      endsAt: toIso(period.end),
-      decisionDeadline: isRandom
-        ? toIso(period.end)
-        : toIso({ date: decisionDate, time: DECISION_DEADLINE }),
-      resultPublishAt: toIso({ date: decisionDate, time: announceTime }),
-    };
-  });
+  return {
+    type: SERVER_TRACK[track],
+    rounds: schedule.rounds.map(({ round, period }) => {
+      const isRandom = round === 'RANDOM';
+      const decisionDate = isRandom ? period.end.date : nextDay(period.end.date);
+      return {
+        name: isRandom ? `${TRACK_NAME[track]} 랜덤 매칭` : `${TRACK_NAME[track]} ${round}차`,
+        phase: PHASE[round],
+        startsAt: toIso(period.start),
+        endsAt: toIso(period.end),
+        ...(!isRandom && {
+          decisionDeadline: toIso({ date: decisionDate, time: DECISION_DEADLINE }),
+        }),
+        resultPublishAt: toIso({ date: decisionDate, time: announceTime }),
+      };
+    }),
+  };
 };

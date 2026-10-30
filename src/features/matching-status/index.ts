@@ -1,12 +1,9 @@
 export { useChapterMatchingStatistics } from './hooks/useChapterMatchingStatistics';
-export { useChapterProjects } from './hooks/useChapterProjects';
 export { useMatchingCandidates } from './hooks/useMatchingCandidates';
+export { useMatchingOverview } from './hooks/useMatchingOverview';
 export { type MatchingPermission, useMatchingPermissions } from './hooks/useMatchingPermissions';
 export { useAssignProjectMember, useReleaseProjectMember } from './hooks/useProjectMemberMutations';
-export { type ProjectMembers, useProjectsMembers } from './hooks/useProjectsMembers';
-export { toMatchingResults } from './model/toMatchingResults';
 export {
-  getTotalCapacity,
   toChapterMatchingRate,
   toProjectMatchings,
   toRoundMatchings,

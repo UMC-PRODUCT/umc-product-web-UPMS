@@ -1,7 +1,6 @@
-import type { ProjectsResponse } from '@/entities/project';
 import { toCount, toId } from '@/shared/api/toId';
 
-import type { ProjectMembers } from '../hooks/useProjectsMembers';
+import type { MatchingOverviewResponse } from '../api/getMatchingOverview';
 import type {
   MatchedMember,
   MatchingPart,
@@ -11,10 +10,11 @@ import type {
   RoundMatchingKey,
 } from './types';
 
-type ProjectSummary = NonNullable<ProjectsResponse['content']>[number];
-type ServerPart = NonNullable<NonNullable<ProjectSummary['partQuotas']>[number]['part']>;
-type MemberBrief = NonNullable<ProjectMembers['coProductOwners']>[number];
-type Phase = NonNullable<NonNullable<MemberBrief['matchedRoundInfo']>['phase']>;
+type OverviewProject = NonNullable<MatchingOverviewResponse['projects']>[number];
+type OverviewPart = NonNullable<OverviewProject['parts']>[number];
+type OverviewMember = NonNullable<OverviewPart['members']>[number];
+type ServerPart = NonNullable<OverviewPart['part']>;
+type Phase = NonNullable<NonNullable<OverviewMember['matchedRoundInfo']>['phase']>;
 
 // 모집 파트와 결과 시트 칸 이름 (PE는 서비스 플랫폼 이름)
 const MATCHING_PART: Partial<Record<ServerPart, { part: MatchingPart; label: string }>> = {
@@ -33,7 +33,7 @@ const ROUND_KEY: Record<Phase, RoundMatchingKey> = {
 const toName = ({ nickname, name }: { nickname?: string; name?: string } = {}) =>
   [nickname, name].filter(Boolean).join('/');
 
-const toMember = (member: MemberBrief): MatchedMember | null => {
+const toMember = (member: OverviewMember): MatchedMember | null => {
   // ID가 문자열로 와서 숫자로 맞춤
   const memberId = toId(member.memberId);
   if (memberId === null) return null;
@@ -49,50 +49,46 @@ const toMember = (member: MemberBrief): MatchedMember | null => {
   };
 };
 
-const toProjectResult = (
-  { id, name, productOwner, partQuotas = [], partQuotaStatus }: ProjectSummary,
-  membersByProject: ReadonlyMap<number, ProjectMembers>,
-): ProjectMatchingResult | null => {
-  const projectId = toId(id);
-  if (projectId === null) return null;
-  const members = membersByProject.get(projectId);
-
-  const parts: PartMatching[] = partQuotas.flatMap(({ part, quota }) => {
-    const matching = part && MATCHING_PART[part];
-    if (!matching) return [];
-    const group = members?.partGroups?.find((partGroup) => partGroup.part === part);
-    return [
-      {
-        part: matching.part,
-        partLabel: matching.label,
-        capacity: toCount(quota),
-        members: (group?.members ?? []).flatMap((member) => toMember(member) ?? []),
-      },
-    ];
-  });
+const toProjectResult = ({
+  projectId,
+  projectName,
+  productOwner,
+  partQuotaStatus,
+  parts = [],
+}: OverviewProject): ProjectMatchingResult | null => {
+  const id = toId(projectId);
+  if (id === null) return null;
 
   return {
-    projectId,
-    projectName: name ?? '',
+    projectId: id,
+    projectName: projectName ?? '',
     pmName: toName(productOwner),
     pmSchoolName: productOwner?.schoolName ?? '',
     recruiting: partQuotaStatus === 'RECRUITING',
-    parts,
+    parts: parts.flatMap(({ part, quota, members = [] }): PartMatching[] => {
+      const matching = part && MATCHING_PART[part];
+      if (!matching) return [];
+      return [
+        {
+          part: matching.part,
+          partLabel: matching.label,
+          capacity: toCount(quota),
+          members: members.flatMap((member) => toMember(member) ?? []),
+        },
+      ];
+    }),
   };
 };
 
-// 지부 프로젝트 + 팀원 구성 → 서비스 플랫폼별 매칭 결과 시트 (Web · Mobile 순, 프로젝트 목록 순서)
-// 모바일 PE를 모집하면 Mobile, 아니면 Web. 팀원 구성을 못 불러온 프로젝트는 빈 칸으로 보임
-export const toMatchingResults = (
-  projects: ProjectSummary[],
-  membersByProject: ReadonlyMap<number, ProjectMembers>,
-): PlatformMatchingResults[] => {
+// 매칭 결과 시트 응답 → 서비스 플랫폼별 결과 시트 (Web · Mobile 순, 응답의 프로젝트 순서)
+// 모바일 PE를 모집하면 Mobile, 아니면 Web
+export const toMatchingResults = (projects: OverviewProject[]): PlatformMatchingResults[] => {
   const results: Record<PlatformMatchingResults['platform'], ProjectMatchingResult[]> = {
     WEB: [],
     MOBILE: [],
   };
   for (const project of projects) {
-    const result = toProjectResult(project, membersByProject);
+    const result = toProjectResult(project);
     if (!result) continue;
     const isMobile = result.parts.some(({ part }) => part === 'MOBILE_PE');
     results[isMobile ? 'MOBILE' : 'WEB'].push(result);

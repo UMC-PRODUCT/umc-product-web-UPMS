@@ -243,6 +243,9 @@ const AdminApplications = () => {
                 {projects.data && (
                   <ApplicationTable
                     view="ADMIN"
+                    // 반응형 없음: 표는 피그마 폭(1060) 그대로 두고, 화면에 보이는 폭(좌우 여백 32씩 제외)보다 넓으면 가로 스크롤
+                    className="max-w-[calc(100cqw-64px)]"
+                    contentClassName="min-w-[1060px]"
                     groups={groups}
                     onProjectClick={({ project }) => setSelectedProjectId(project.projectId)}
                   />
