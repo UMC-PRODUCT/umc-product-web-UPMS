@@ -13,17 +13,21 @@ import { useDebounce } from 'use-debounce';
 
 import { useChapters } from '@/entities/chapter';
 import { useProjectSettingsAccess, useSessionStore } from '@/entities/session';
+import {
+  type DraftValues,
+  PartStatCard,
+  QuotaTableFooter,
+  QuotaTableRow,
+} from '@/features/project-quota';
+import type { ProjectRow } from '@/features/project-quota/api/getPartQuotas';
+import { partQuotasQueryOptions } from '@/features/project-quota/api/partQuotasQuery';
+import {
+  savePartQuotas,
+  type SavePartQuotasRequest,
+} from '@/features/project-quota/api/savePartQuotas';
 import { cn } from '@/shared/lib/cn';
 import SearchBar from '@/widgets/searchBar/SearchBar';
 import { useAppToast } from '@/widgets/toast';
-
-import type { ProjectRow } from './api/getPartQuotas';
-import { partQuotasQueryOptions } from './api/partQuotasQuery';
-import { savePartQuotas, type SavePartQuotasRequest } from './api/savePartQuotas';
-import PartStatCard from './PartStatCard';
-import QuotaTableFooter from './QuotaTableFooter';
-import QuotaTableRow from './QuotaTableRow';
-import type { DraftValues } from './types';
 
 const BREADCRUMBS = [
   { label: '데모데이 매칭', href: '/demo-day' },

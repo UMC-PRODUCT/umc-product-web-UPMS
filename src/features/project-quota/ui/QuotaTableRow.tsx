@@ -1,7 +1,11 @@
 import type { RefObject } from 'react';
 
-import type { Column, ProjectRow } from './api/getPartQuotas';
-import type { DraftValues } from './types';
+import type { components } from '@/types/api';
+
+import type { DraftValues } from '../model/types';
+
+type Column = NonNullable<components['schemas']['Column']>;
+type ProjectRow = NonNullable<components['schemas']['ProjectRow']>;
 
 type Props = {
   project: ProjectRow;

@@ -1,4 +1,6 @@
-import type { Column } from './api/getPartQuotas';
+import type { components } from '@/types/api';
+
+type Column = NonNullable<components['schemas']['Column']>;
 
 type Props = {
   columns: Column[];
