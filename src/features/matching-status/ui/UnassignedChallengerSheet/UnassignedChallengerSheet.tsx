@@ -14,8 +14,8 @@ const COLUMNS_CLASS = 'grid grid-cols-[180px_150px_136px] items-center gap-3.5';
 
 type UnassignedChallengerSheetProps = {
   challengers: UnassignedChallenger[];
-  selectedId: string | null;
-  onSelect: (challengerId: string) => void;
+  selectedId: number | null; // 고른 챌린저 memberId
+  onSelect: (memberId: number) => void;
 };
 
 // 피그마 팀원 수동 배정 표: 아직 배정되지 않은 챌린저 중 한 명을 고름 (고른 줄은 체크 + teal 강조)
@@ -37,16 +37,16 @@ const UnassignedChallengerSheet = ({
       aria-label="배정할 챌린저"
       className="flex min-h-0 flex-col overflow-y-auto"
     >
-      {challengers.map(({ challengerId, challengerName, schoolName, part }) => {
-        const selected = challengerId === selectedId;
+      {challengers.map(({ memberId, challengerName, schoolName, part }) => {
+        const selected = memberId === selectedId;
 
         return (
-          <li key={challengerId}>
+          <li key={memberId}>
             <button
               type="button"
               role="radio"
               aria-checked={selected}
-              onClick={() => onSelect(challengerId)}
+              onClick={() => onSelect(memberId)}
               className={`relative ${COLUMNS_CLASS} h-[42px] w-full border-b border-teal-grey-100 pl-8 text-left text-body-2-medium ${
                 selected ? 'bg-teal-50 text-teal-600' : 'bg-teal-grey-50 text-teal-grey-800'
               }`}
