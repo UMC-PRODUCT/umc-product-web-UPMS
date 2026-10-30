@@ -193,9 +193,16 @@ const ProjectsPage = () => {
 
   const { data: rounds } = useMatchingRounds(chapterId ?? undefined);
   const schedules = rounds ? toScheduleByTrack(rounds) : null;
-  const step = schedules ? getCurrentMatchingStep(schedules.PLAN_PE.setting, new Date()) : null;
-  const isApplicationPeriod = step?.status === 'ONGOING' && step.phase === 'APPLY';
-  const isMatchingPeriod = step?.status === 'ONGOING' && step.phase === 'MATCHING';
+  const designStep = schedules
+    ? getCurrentMatchingStep(schedules.PLAN_DESIGN.setting, new Date())
+    : null;
+  const peStep = schedules ? getCurrentMatchingStep(schedules.PLAN_PE.setting, new Date()) : null;
+  const isApplicationPeriod =
+    (designStep?.status === 'ONGOING' && designStep.phase === 'APPLY') ||
+    (peStep?.status === 'ONGOING' && peStep.phase === 'APPLY');
+  const isMatchingPeriod =
+    (designStep?.status === 'ONGOING' && designStep.phase === 'MATCHING') ||
+    (peStep?.status === 'ONGOING' && peStep.phase === 'MATCHING');
 
   const resolvedView = getApplicationsView(role, view);
   const isPmChallenger = resolvedView === 'PM_CHALLENGER';
@@ -253,7 +260,7 @@ const ProjectsPage = () => {
       />
 
       <div className="flex w-full max-w-[1082px] flex-col">
-        <div className="flex items-center justify-between gap-4">
+        <div className="mb-8 flex items-center justify-between gap-4">
           {!isPmChallenger && allChapters.length > 0 && (
             <SegmentedControl
               aria-label="지부 선택"
