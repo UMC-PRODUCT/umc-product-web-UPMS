@@ -260,7 +260,7 @@ const ProjectsPage = () => {
       />
 
       <div className="flex w-full max-w-[1082px] flex-col">
-        <div className="mb-8 flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4">
           {!isPmChallenger && allChapters.length > 0 && (
             <SegmentedControl
               aria-label="지부 선택"
@@ -273,7 +273,7 @@ const ProjectsPage = () => {
               )}
             />
           )}
-          {role !== 'HQ_ADMIN' && !isPmChallenger && (
+          {role !== 'HQ_ADMIN' && (!isPmChallenger || projects.length > 0) && (
             <Button
               size="sm"
               className="ml-auto h-11 shrink-0"
