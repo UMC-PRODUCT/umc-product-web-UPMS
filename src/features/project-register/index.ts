@@ -1,3 +1,4 @@
+export { useEditProject } from './hooks/useEditProject';
 export { useMyDraftProject } from './hooks/useMyDraftProject';
 export { usePmCandidates } from './hooks/usePmCandidates';
 export { useSaveProject } from './hooks/useSaveProject';
