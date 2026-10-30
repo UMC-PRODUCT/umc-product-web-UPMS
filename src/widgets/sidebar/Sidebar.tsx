@@ -6,6 +6,7 @@ import {
   getViewOptions,
   type ProjectSettingsAccess,
   type Role,
+  useApplicationsView,
   useProjectSettingsAccess,
   useSessionStore,
   type View,
@@ -15,11 +16,16 @@ import { TEAM_MATCHING_MENU } from '@/shared/config/teamMatchingMenu';
 // 사이드바가 선택 상태에 따라 아이콘 색을 바꾸도록 currentColor를 넘긴다
 const peopleIcon = <PeoplePictogram color="currentColor" />;
 
-const TEAM_MATCHING_GROUP: SideNavigationGroup = {
+const APPLICATIONS_HREF = '/demo-day/team-matching/applications';
+
+// 피그마: 일반 챌린저는 본인 지원만 보므로 '지원 현황' 메뉴를 '내 지원 현황'으로 표시
+const getTeamMatchingGroup = (isChallengerView: boolean): SideNavigationGroup => ({
   label: '팀 매칭',
   icon: peopleIcon,
-  children: TEAM_MATCHING_MENU,
-};
+  children: TEAM_MATCHING_MENU.map((item) =>
+    isChallengerView && item.href === APPLICATIONS_HREF ? { ...item, label: '내 지원 현황' } : item,
+  ),
+});
 
 const SCHOOL_ROLES: Role[] = ['SCHOOL_ADMIN', 'SCHOOL_STAFF'];
 
@@ -56,12 +62,14 @@ const Sidebar = () => {
   const view = useSessionStore((state) => state.view);
   const setView = useSessionStore((state) => state.setView);
   const access = useProjectSettingsAccess();
+  const applicationsView = useApplicationsView();
 
   const viewOptions = getViewOptions(session);
   const projectSettingsGroup = getProjectSettingsGroup(access, session.role);
+  const teamMatchingGroup = getTeamMatchingGroup(applicationsView === 'CHALLENGER');
   const items = projectSettingsGroup
-    ? [projectSettingsGroup, TEAM_MATCHING_GROUP]
-    : [TEAM_MATCHING_GROUP];
+    ? [projectSettingsGroup, teamMatchingGroup]
+    : [teamMatchingGroup];
 
   const handleViewChange = (nextView: View) => {
     setView(nextView);

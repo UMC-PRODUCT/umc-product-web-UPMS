@@ -6,3 +6,6 @@ export const toId = (value: unknown): number | null => {
   const id = Number(value);
   return Number.isSafeInteger(id) ? id : null;
 };
+
+// 인원 수 · 정원도 int64라 문자열로 옴. 숫자로 맞추고, 없거나 읽을 수 없으면 0명
+export const toCount = (value: unknown): number => toId(value) ?? 0;

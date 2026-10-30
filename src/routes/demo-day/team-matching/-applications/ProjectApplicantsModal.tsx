@@ -4,6 +4,7 @@ import { Dialog } from 'radix-ui';
 import { useState } from 'react';
 
 import {
+  type Applicant,
   APPLICANT_ROUND_OPTIONS,
   APPLICANT_STATUS_OPTIONS,
   type ApplicantRoundFilter,
@@ -32,8 +33,12 @@ type ProjectApplicantsModalProps = {
   group: ProjectApplicationGroup | null; // null이면 닫힘
   chapterName: string; // 소속 지부
   onClose: () => void;
-  // 배정 상태 변경. 없으면 조회만 (학교 운영진, 다른 지부 프로젝트를 보는 지부장 등)
-  onStatusChange?: (applicantId: string, status: ApplicantStatus) => void;
+  // 배정 상태 변경. 없으면 조회만 (서버 규칙상 지부장 · 학교 운영진은 조회만)
+  onStatusChange?: (applicant: Applicant, status: ApplicantStatus) => void;
+  // 이 지원자의 배정 상태를 지금 바꿀 수 있는지 (서버 권한 + 그 차수의 결정 기간)
+  canChangeStatus?: (applicant: Applicant) => boolean;
+  isUpdatingStatus?: boolean; // 변경 요청 중 (중복 클릭 방지)
+  canReadApplication?: boolean; // 지원서 열람 가능 여부 (권한표: 중앙운영진은 지원자 목록만)
 };
 
 // 어드민 지원 현황에서 프로젝트명을 누르면 뜨는 프로젝트 상세: 파트별 지원한 챌린저 목록
@@ -42,6 +47,9 @@ const ProjectApplicantsModal = ({
   chapterName,
   onClose,
   onStatusChange,
+  canChangeStatus = () => false,
+  isUpdatingStatus = false,
+  canReadApplication = true,
 }: ProjectApplicantsModalProps) => {
   const [round, setRound] = useState<ApplicantRoundFilter>('ALL');
   const [status, setStatus] = useState<ApplicantStatusFilter>('ALL');
@@ -141,7 +149,16 @@ const ProjectApplicantsModal = ({
                       applicants={applicants}
                       visibleApplicants={filterApplicants(applicants, round, status)}
                       onStatusChange={onStatusChange}
-                      onApplicantClick={({ applicantId }) => setSelectedApplicantId(applicantId)}
+                      // 변경 요청 중에는 다른 칩도 잠깐 막음
+                      canChangeStatus={(applicant) =>
+                        !isUpdatingStatus && canChangeStatus(applicant)
+                      }
+                      // 지원서를 열 수 없는 역할은 이름을 눌러도 아무 동작 없음
+                      onApplicantClick={
+                        canReadApplication
+                          ? ({ applicantId }) => setSelectedApplicantId(applicantId)
+                          : undefined
+                      }
                     />
                   );
                 })}
@@ -157,6 +174,8 @@ const ProjectApplicantsModal = ({
           chapterName={chapterName}
           onClose={() => setSelectedApplicantId(null)}
           onStatusChange={onStatusChange}
+          canChangeStatus={selectedApplicant !== null && canChangeStatus(selectedApplicant)}
+          isUpdatingStatus={isUpdatingStatus}
         />
       )}
     </>

@@ -14,7 +14,7 @@ type ProjectCardProps = {
 
 // 피그마 Project Card_Md Horizen: 썸네일 + 프로젝트 정보 + 파트별 모집 현황
 const ProjectCard = ({ project, showResult = true, onClick }: ProjectCardProps) => {
-  const { projectName, logoUrl, thumbnailUrl, pmName, schoolName, result } = project;
+  const { projectName, thumbnailUrl, pmName, schoolName, result } = project;
   const recruitments = getVisibleRecruitments(project);
 
   return (
@@ -39,7 +39,8 @@ const ProjectCard = ({ project, showResult = true, onClick }: ProjectCardProps) 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
-              <ImageThumbnail src={logoUrl} alt={`${projectName} 로고`} size={30} />
+              {/* TODO: 내 지원 목록 API(ProjectBrief)에 로고가 없어 기본 로고. 백엔드에 logoImageUrl 추가 요청 */}
+              <ImageThumbnail src={null} alt={`${projectName} 로고`} size={30} />
               <h3 className="truncate text-heading-4-semibold text-teal-grey-900">{projectName}</h3>
             </div>
             {showResult && result && <MatchingResultTag result={result} className="shrink-0" />}

@@ -4,6 +4,7 @@ export {
   canEditApplicantStatus,
   canManageMatching,
   canManageNotice,
+  getApplicationsAccess,
   getApplicationsView,
   getChapterScope,
   getMatchingScheduleAccess,
