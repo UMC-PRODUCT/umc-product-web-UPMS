@@ -1,4 +1,8 @@
-export { filterProjects } from './model/filterProjects';
+export { useProjectFilters } from './hooks/useProjectFilters';
+export { useProjects } from './hooks/useProjects';
+export { useProjectViewer } from './hooks/useProjectViewer';
+export { useProjectWithDetail } from './hooks/useProjectWithDetail';
+export { PROJECTS_PER_PAGE } from './lib/toProjectsQuery';
 export {
   getProjectActions,
   type ProjectAction,
@@ -6,9 +10,7 @@ export {
   type ProjectActions,
 } from './model/getProjectActions';
 export { getRecruitmentRows, type RecruitmentRow } from './model/getRecruitmentRows';
-export { MOCK_PROJECT_VIEWER } from './model/mockProjectContext';
-export { MOCK_PROJECTS } from './model/mockProjects';
-export { getSchoolOptions, INITIAL_PROJECT_FILTERS, PROJECT_FILTERS } from './model/projectFilters';
+export { INITIAL_PROJECT_FILTERS } from './model/projectFilters';
 export type {
   PartRecruitment,
   Project,

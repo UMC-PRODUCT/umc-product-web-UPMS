@@ -24,6 +24,8 @@ export class ApiError extends Error {
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   timeout: 10_000,
+  // 배열 쿼리를 서버(Spring) 형식 ?parts=A&parts=B 로 보냄 (기본값은 parts[]=A)
+  paramsSerializer: { indexes: null },
 });
 
 // 로그인으로 받은 토큰을 붙이고, 없으면 개발용 토큰을 씀

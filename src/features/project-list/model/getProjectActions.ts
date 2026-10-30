@@ -64,7 +64,10 @@ const getStaffPrimaryAction = ({
     (view === 'ADMIN' &&
       (role === 'SUPER_ADMIN' ||
         role === 'HQ_LEAD' ||
-        (role === 'CHAPTER_ADMIN' && chapterId !== null && chapterId === project.chapterId)));
+        (role === 'CHAPTER_ADMIN' &&
+          chapterId !== null &&
+          project.chapterId !== null &&
+          chapterId === project.chapterId)));
 
   if (period.phase === 'APPLY') return enabled('RECRUIT_QUESTIONS', '모집 문항 보기');
   if (canEdit) return enabled('EDIT_PROJECT', '프로젝트 수정하기');
@@ -79,7 +82,10 @@ const getChallengerPrimaryAction = ({
   period,
   viewer,
 }: GetProjectActionsParams): ProjectAction | null => {
-  if (chapterId === null || chapterId !== project.chapterId) return null;
+  // 프로젝트 지부를 모르면(null) 막지 않음. 지원 가능 여부는 서버가 최종 판단
+  if (chapterId === null || (project.chapterId !== null && chapterId !== project.chapterId)) {
+    return null;
+  }
   if (viewer.isMatched) return null;
 
   if (viewer.appliedProjectId === project.projectId) {
@@ -107,6 +113,7 @@ export const getProjectActions = (params: GetProjectActionsParams): ProjectActio
     params.view === 'CHALLENGER'
       ? getChallengerPrimaryAction(params)
       : getStaffPrimaryAction(params),
-  // 매칭 기간이 끝나고 다음 차수 지원 기간이 되어야 팀원 구성을 볼 수 있음
-  showTeamButton: params.period.phase === 'APPLY' && params.period.round >= 2,
+  // 피그마 상세 카드에는 항상 있음. 매칭 기간에도 전 차수 결과를 유지하다가 결과 발표 시 함께 갱신되고,
+  // 매칭된 팀원이 아직 없으면 팀원 구성 패널이 "매칭이 진행 중이에요"로 안내함
+  showTeamButton: true,
 });
