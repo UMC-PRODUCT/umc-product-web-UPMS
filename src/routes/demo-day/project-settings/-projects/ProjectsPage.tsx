@@ -199,12 +199,13 @@ const ProjectsPage = () => {
   const isPmChallenger = view === 'PM_CHALLENGER';
   const navigate = useNavigate();
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery(
-    managedProjectsInfiniteQueryOptions({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    ...managedProjectsInfiniteQueryOptions({
       gisuId: gisuId ?? 0,
       chapterId: isPmChallenger ? undefined : (chapterId ?? undefined),
     }),
-  );
+    enabled: !!gisuId && (isPmChallenger || chapterId !== null),
+  });
   const allProjects = data?.pages.flatMap((p) => p.projects) ?? [];
   const projects = allProjects.filter((p) => !deletedProjectIds.includes(p.projectId));
 
