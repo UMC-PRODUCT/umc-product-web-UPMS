@@ -8,6 +8,11 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { useChapters } from '@/entities/chapter';
 import { getApplicationsView, type Role, useSessionStore, type View } from '@/entities/session';
 import {
+  getCurrentMatchingStep,
+  toScheduleByTrack,
+  useMatchingRounds,
+} from '@/features/matching-schedule';
+import {
   type ManagedProject,
   ProjectManagementCard,
   type RecruitPart,
@@ -186,10 +191,11 @@ const ProjectsPage = () => {
   const toast = useAppToast();
   const queryClient = useQueryClient();
 
-  // TODO: API 연동 - 현재 지원 기간 여부
-  const isApplicationPeriod = false;
-  // TODO: API 연동 - 현재 매칭 기간 여부
-  const isMatchingPeriod = false;
+  const { data: rounds } = useMatchingRounds(chapterId ?? undefined);
+  const schedules = rounds ? toScheduleByTrack(rounds) : null;
+  const step = schedules ? getCurrentMatchingStep(schedules.PLAN_PE.setting, new Date()) : null;
+  const isApplicationPeriod = step?.status === 'ONGOING' && step.phase === 'APPLY';
+  const isMatchingPeriod = step?.status === 'ONGOING' && step.phase === 'MATCHING';
 
   const resolvedView = getApplicationsView(role, view);
   const isPmChallenger = resolvedView === 'PM_CHALLENGER';
