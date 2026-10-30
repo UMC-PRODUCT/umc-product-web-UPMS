@@ -260,7 +260,12 @@ const ProjectsPage = () => {
       />
 
       <div className="flex w-full max-w-[1082px] flex-col">
-        <div className="flex items-center justify-between gap-4">
+        <div
+          className={cn(
+            'flex items-center justify-between gap-4',
+            isPmChallenger ? 'pb-0' : 'pb-8',
+          )}
+        >
           {!isPmChallenger && allChapters.length > 0 && (
             <SegmentedControl
               aria-label="지부 선택"
@@ -320,7 +325,7 @@ const ProjectsPage = () => {
               return (
                 <>
                   {webProjects.length > 0 && (
-                    <section className="mt-8 flex flex-col">
+                    <section className="flex flex-col">
                       <h2 className="mb-[10px] text-title-2-semibold">Web</h2>
                       <ul className="flex flex-col gap-[10px]">
                         {webProjects.map((project) => (
