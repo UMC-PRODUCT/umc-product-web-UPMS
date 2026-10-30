@@ -4,9 +4,11 @@ import ProjectRegisterPage from '../-register/ProjectRegisterPage';
 
 const ProjectEditRoute = () => {
   const navigate = Route.useNavigate();
+  const { projectId } = Route.useParams();
 
   return (
     <ProjectRegisterPage
+      projectId={Number(projectId)}
       onComplete={() => navigate({ to: '/demo-day/project-settings/projects' })}
     />
   );
