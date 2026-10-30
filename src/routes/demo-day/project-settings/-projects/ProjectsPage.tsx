@@ -6,12 +6,13 @@ import { Dialog as RadixDialog } from 'radix-ui';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { useChapters } from '@/entities/chapter';
-import { getChapterScope, type Role, useSessionStore, type View } from '@/entities/session';
+import { type Role, useSessionStore, type View } from '@/entities/session';
 import {
   type ManagedProject,
   ProjectManagementCard,
   type RecruitPart,
 } from '@/features/project-management';
+import { cn } from '@/shared/lib/cn';
 import ProjectCard from '@/widgets/card/projectCard';
 import { useAppToast } from '@/widgets/toast';
 
@@ -180,11 +181,9 @@ const ProjectsPage = () => {
   const ownChapterId = useSessionStore((state) => state.session.serverChapterId);
   const gisuId = useSessionStore((state) => state.session.gisuId);
   const { data: allChapters = [] } = useChapters(gisuId);
-  const chapterScope = getChapterScope(role);
-  const chapters =
-    chapterScope === 'ALL' ? allChapters : allChapters.filter((c) => c.id === ownChapterId);
-  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
-  const chapterId = selectedChapterId ?? chapters[0]?.id ?? null;
+  const isChapterLeader = role === 'CHAPTER_ADMIN';
+  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(ownChapterId);
+  const chapterId = selectedChapterId ?? allChapters[0]?.id ?? null;
   const [selectedProject, setSelectedProject] = useState<ManagedProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ManagedProject | null>(null);
   const [deletedProjectIds, setDeletedProjectIds] = useState<string[]>([]);
@@ -252,13 +251,16 @@ const ProjectsPage = () => {
 
       <div className="flex w-full max-w-[1082px] flex-col">
         <div className="flex items-center justify-between gap-4">
-          {!isPmChallenger && chapters.length > 0 && (
+          {!isPmChallenger && allChapters.length > 0 && (
             <SegmentedControl
               aria-label="지부 선택"
-              items={chapters.map((c) => ({ value: String(c.id), label: c.name }))}
-              value={String(chapterId ?? chapters[0]?.id ?? '')}
-              onValueChange={(v) => setSelectedChapterId(Number(v))}
-              className="[&_[role=radio]:not([data-checked])]:text-teal-600"
+              items={allChapters.map((c) => ({ value: String(c.id), label: c.name }))}
+              value={String(selectedChapterId ?? allChapters[0]?.id ?? '')}
+              onValueChange={(v) => !isChapterLeader && setSelectedChapterId(Number(v))}
+              className={cn(
+                '[&_[role=radio]:not([data-checked])]:text-teal-600',
+                isChapterLeader && '[&_[role=radio]:not([data-checked])]:cursor-not-allowed',
+              )}
             />
           )}
           {role !== 'HQ_ADMIN' && (
