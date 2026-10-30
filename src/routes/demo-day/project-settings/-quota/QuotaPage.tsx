@@ -25,7 +25,6 @@ import {
   savePartQuotas,
   type SavePartQuotasRequest,
 } from '@/features/project-quota/api/savePartQuotas';
-import { cn } from '@/shared/lib/cn';
 import SearchBar from '@/widgets/searchBar/SearchBar';
 import { useAppToast } from '@/widgets/toast';
 
@@ -44,27 +43,32 @@ const initDraftFromProjects = (projects: ProjectRow[]): DraftValues =>
   );
 
 const QuotaPage = () => {
-  const canEdit = useProjectSettingsAccess() === 'FULL';
+  const hasFullAccess = useProjectSettingsAccess() === 'FULL';
   const gisuId = useSessionStore((s) => s.session.gisuId);
   const role = useSessionStore((s) => s.session.role);
   const serverChapterId = useSessionStore((s) => s.session.serverChapterId);
+  const isChapterLeader = role === 'CHAPTER_ADMIN';
 
   // 지부 선택
   const [selectedChapterId, setSelectedChapterId] = useState<number | undefined>(
-    serverChapterId ?? undefined,
+    isChapterLeader ? (serverChapterId ?? undefined) : undefined,
   );
+
+  const { data: chaptersData } = useChapters(gisuId ?? null);
+  const chapterId = selectedChapterId ?? chaptersData?.[0]?.id;
+
+  // 지부장은 본인 지부만 수정 가능, 타 지부는 조회만 가능
+  const canEdit = hasFullAccess && (!isChapterLeader || chapterId === serverChapterId);
 
   // 검색 및 필터
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebounce(search, 300);
   const [schoolId, setSchoolId] = useState<number | undefined>(undefined);
 
-  const { data: chaptersData } = useChapters(gisuId ?? null);
-
   const { data, isError } = useQuery(
     partQuotasQueryOptions({
       gisuId: gisuId ?? 0,
-      chapterId: selectedChapterId,
+      chapterId: chapterId,
       keyword: debouncedSearch || undefined,
       schoolId,
     }),
@@ -178,8 +182,6 @@ const QuotaPage = () => {
     });
   };
 
-  const isChapterLeader = role === 'CHAPTER_ADMIN';
-
   const chapterItems = (chaptersData ?? []).map((c) => ({
     value: String(c.id),
     label: c.name,
@@ -198,12 +200,9 @@ const QuotaPage = () => {
         <SegmentedControl
           aria-label="지부 선택"
           items={chapterItems}
-          value={String(selectedChapterId ?? data?.chapterId ?? '')}
-          onValueChange={(v) => !isChapterLeader && setSelectedChapterId(Number(v))}
-          className={cn(
-            '[&_[role=radio]:not([data-checked])]:text-teal-600',
-            isChapterLeader && '[&_[role=radio]:not([data-checked])]:cursor-not-allowed',
-          )}
+          value={String(chapterId ?? '')}
+          onValueChange={(v) => setSelectedChapterId(Number(v))}
+          className="[&_[role=radio]:not([data-checked])]:text-teal-600"
         />
 
         <section className="mt-8 flex flex-col">
