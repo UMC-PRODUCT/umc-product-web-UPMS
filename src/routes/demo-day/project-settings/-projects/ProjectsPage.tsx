@@ -1,20 +1,35 @@
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { AddIcon, UsersPictogram, WarningTriangleIcon } from '@umc-product/icons';
-import { Button, Dialog, Dimmed, PageHeader } from '@umc-product/react';
+import { Button, Dialog, Dimmed, PageHeader, SegmentedControl } from '@umc-product/react';
 import { Dialog as RadixDialog } from 'radix-ui';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
-import { type Role, useSessionStore, type View } from '@/entities/session';
-import { ChapterSelectHeader, useVisibleChapters } from '@/features/chapter-select';
+import { useChapters } from '@/entities/chapter';
+import { getApplicationsView, type Role, useSessionStore, type View } from '@/entities/session';
+import { useProjectDetail } from '@/features/applications';
+import {
+  getCurrentMatchingStep,
+  toScheduleByTrack,
+  useMatchingRounds,
+} from '@/features/matching-schedule';
+import {
+  getProjectMembers,
+  TeamCompositionPanel,
+  toTeamRecruitments,
+} from '@/features/project-list';
 import {
   type ManagedProject,
   ProjectManagementCard,
   type RecruitPart,
 } from '@/features/project-management';
+import { deleteProject } from '@/features/project-management/api/deleteProject';
+import { managedProjectsInfiniteQueryOptions } from '@/features/project-management/api/managedProjectsQuery';
+import { cn } from '@/shared/lib/cn';
 import ProjectCard from '@/widgets/card/projectCard';
 import { useAppToast } from '@/widgets/toast';
 
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
-import { MOCK_PM_PROJECTS, MOCK_PROJECTS } from './mock';
 
 const BREADCRUMBS = [
   { label: '데모데이 매칭', href: '/demo-day' },
@@ -32,10 +47,11 @@ const PART_LABEL: Record<RecruitPart, string> = {
 const getProjectDetailActions = (
   role: Role,
   view: View,
-  project: ManagedProject,
-  ownChapterId: string,
   isApplicationPeriod: boolean,
   isMatchingPeriod: boolean,
+  planUrl: string | null,
+  onEditProject: () => void,
+  onTeamClick: () => void,
 ): ReactNode => {
   const usersButton = (
     <Button
@@ -44,11 +60,18 @@ const getProjectDetailActions = (
       size="md"
       icon={<UsersPictogram size={30} color="var(--color-icon-subtle)" />}
       aria-label="팀원 현황"
+      onClick={onTeamClick}
     />
   );
 
   const planButton = (
-    <Button variant="weak" size="md" className="flex-1">
+    <Button
+      variant="weak"
+      size="md"
+      className="flex-1"
+      disabled={!planUrl}
+      onClick={() => planUrl && window.open(planUrl, '_blank')}
+    >
       기획 보기
     </Button>
   );
@@ -65,58 +88,47 @@ const getProjectDetailActions = (
     </Button>
   );
 
-  // 지원 기간: 모든 역할·지부에 관계없이 기획 보기 + 모집 문항 보기
+  const editButton = (
+    <Button size="md" className="flex-1" onClick={onEditProject}>
+      프로젝트 수정하기
+    </Button>
+  );
+
+  // 지원기간: PM 챌린저 + 어드민 모두 모집 문항 보기
   if (isApplicationPeriod) {
     return (
       <>
+        {usersButton}
         {planButton}
         {recruitButton}
       </>
     );
   }
 
-  // PM 챌린저 - 자신의 프로젝트만 조회하므로 기획 보기 + 프로젝트 수정하기
+  // PM 챌린저: 지원기간 전 / 매칭기간 모두 프로젝트 수정하기
   if (view === 'PM_CHALLENGER') {
     return (
       <>
         {usersButton}
         {planButton}
-        <Button size="md" className="flex-1">
-          프로젝트 수정하기
-        </Button>
+        {editButton}
       </>
     );
   }
 
-  // 매칭 기간 (어드민): 기획 보기 + 모집 문항 보기(비활성화)
+  // 매칭기간 (어드민): 모집 문항 보기 비활성화
   if (isMatchingPeriod) {
     return (
       <>
+        {usersButton}
         {planButton}
         {recruitButtonDisabled}
       </>
     );
   }
 
-  // 기본 - Admin(중앙), SUPER_ADMIN, 소속 지부 지부장
-  if (
-    role === 'HQ_ADMIN' ||
-    role === 'SUPER_ADMIN' ||
-    (role === 'HQ_LEAD' && project.chapterId === ownChapterId)
-  ) {
-    return (
-      <>
-        {usersButton}
-        {planButton}
-        <Button size="md" className="flex-1">
-          프로젝트 수정하기
-        </Button>
-      </>
-    );
-  }
-
-  // 기본 - 타 지부 지부장, 학교 운영진(CHAPTER_ADMIN)
-  if (role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN') {
+  // 지원기간 전 - 타 지부장(CHAPTER_ADMIN): 모집 문항 보기
+  if (role === 'CHAPTER_ADMIN') {
     return (
       <>
         {usersButton}
@@ -126,7 +138,14 @@ const getProjectDetailActions = (
     );
   }
 
-  return planButton;
+  // 지원기간 전 - SUPER_ADMIN, HQ_LEAD, HQ_ADMIN: 프로젝트 수정하기
+  return (
+    <>
+      {usersButton}
+      {planButton}
+      {editButton}
+    </>
+  );
 };
 
 // 프로젝트 관리 워딩 반환 함수
@@ -145,7 +164,13 @@ const getDescription = (role: Role, view: View): string => {
 };
 
 // 프로젝트 없을 시
-const EmptyState = ({ showRegisterButton }: { showRegisterButton: boolean }) => (
+const EmptyState = ({
+  showRegisterButton,
+  onRegister,
+}: {
+  showRegisterButton: boolean;
+  onRegister?: () => void;
+}) => (
   <div className="flex flex-col items-center gap-6 py-20">
     <EmptyDocumentIcon width={56} height={56} className="text-teal-grey-200" />
     <div className="flex flex-col items-center gap-2">
@@ -155,7 +180,7 @@ const EmptyState = ({ showRegisterButton }: { showRegisterButton: boolean }) => 
       </p>
     </div>
     {showRegisterButton && (
-      <Button size="sm">
+      <Button size="sm" onClick={onRegister}>
         <div className="flex items-center gap-2">
           <AddIcon size={16} />
           프로젝트 등록
@@ -168,34 +193,92 @@ const EmptyState = ({ showRegisterButton }: { showRegisterButton: boolean }) => 
 const ProjectsPage = () => {
   const role = useSessionStore((state) => state.session.role);
   const view = useSessionStore((state) => state.view);
-  const ownChapterId = useSessionStore((state) => state.session.chapterId);
-  const chapters = useVisibleChapters();
-  const [chapterId, setChapterId] = useState(
-    () => chapters.find((c) => c.id === ownChapterId)?.id ?? chapters[0]?.id ?? '',
+  const ownChapterId = useSessionStore((state) => state.session.serverChapterId);
+  const gisuId = useSessionStore((state) => state.session.gisuId);
+  const { data: allChapters = [] } = useChapters(gisuId);
+  const isChapterLeader = role === 'CHAPTER_ADMIN';
+  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(
+    isChapterLeader ? ownChapterId : null,
   );
+  const chapterId = selectedChapterId ?? allChapters[0]?.id ?? null;
   const [selectedProject, setSelectedProject] = useState<ManagedProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ManagedProject | null>(null);
   const [deletedProjectIds, setDeletedProjectIds] = useState<string[]>([]);
   const toast = useAppToast();
+  const queryClient = useQueryClient();
 
-  // TODO: API 연동 - 현재 지원 기간 여부
-  const isApplicationPeriod = false;
-  // TODO: API 연동 - 현재 매칭 기간 여부
-  const isMatchingPeriod = false;
+  const { data: rounds } = useMatchingRounds(chapterId ?? undefined);
+  const schedules = rounds ? toScheduleByTrack(rounds) : null;
+  const designStep = schedules
+    ? getCurrentMatchingStep(schedules.PLAN_DESIGN.setting, new Date())
+    : null;
+  const peStep = schedules ? getCurrentMatchingStep(schedules.PLAN_PE.setting, new Date()) : null;
+  const isApplicationPeriod =
+    (designStep?.status === 'ONGOING' && designStep.phase === 'APPLY') ||
+    (peStep?.status === 'ONGOING' && peStep.phase === 'APPLY');
+  const isMatchingPeriod =
+    (designStep?.status === 'ONGOING' && designStep.phase === 'MATCHING') ||
+    (peStep?.status === 'ONGOING' && peStep.phase === 'MATCHING');
 
-  const isPmChallenger = view === 'PM_CHALLENGER';
+  const resolvedView = getApplicationsView(role, view);
+  const isPmChallenger = resolvedView === 'PM_CHALLENGER';
+  const navigate = useNavigate();
 
-  // TODO: API 연동 (PM 챌린저: 본인 프로젝트 / 어드민: 지부별 프로젝트 목록)
-  const allProjects = isPmChallenger
-    ? MOCK_PM_PROJECTS
-    : MOCK_PROJECTS.filter((p) => p.chapterId === chapterId);
+  const [teamPanelOpen, setTeamPanelOpen] = useState(false);
+
+  const { data: selectedProjectDetail } = useProjectDetail(
+    selectedProject ? Number(selectedProject.projectId) : null,
+  );
+  const planUrl = selectedProjectDetail?.planUrl ?? null;
+
+  const { data: teamMembersData } = useQuery({
+    queryKey: ['project-members', selectedProject?.projectId],
+    queryFn: () => getProjectMembers(Number(selectedProject!.projectId)),
+    enabled: selectedProject !== null,
+  });
+
+  const teamRecruitments = toTeamRecruitments(selectedProject?.recruitments ?? [], teamMembersData);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    ...managedProjectsInfiniteQueryOptions({
+      gisuId: gisuId ?? 0,
+      chapterId: isPmChallenger ? (ownChapterId ?? undefined) : (chapterId ?? undefined),
+    }),
+    enabled: !!gisuId && (isPmChallenger || chapterId !== null),
+  });
+  const allProjects = data?.pages.flatMap((p) => p.projects) ?? [];
   const projects = allProjects.filter((p) => !deletedProjectIds.includes(p.projectId));
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) fetchNextPage();
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  const { mutate: deleteMutate } = useMutation({
+    mutationFn: (projectId: string) => deleteProject(projectId),
+    onSuccess: (_data, projectId) => {
+      setDeletedProjectIds((prev) => [...prev, projectId]);
+      setDeleteTarget(null);
+      toast.show('프로젝트가 삭제됐어요.', { color: 'error' });
+      queryClient.invalidateQueries({ queryKey: ['managed-projects'] });
+    },
+    onError: () => {
+      toast.show('프로젝트 삭제에 실패했어요. 다시 시도해 주세요.', { color: 'error' });
+    },
+  });
 
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
-    setDeletedProjectIds((prev) => [...prev, deleteTarget.projectId]);
-    setDeleteTarget(null);
-    toast.show('프로젝트가 삭제됐어요.', { color: 'error' });
+    deleteMutate(deleteTarget.projectId);
   };
 
   return (
@@ -204,16 +287,34 @@ const ProjectsPage = () => {
         className="w-full max-w-[1082px]"
         breadcrumbs={BREADCRUMBS}
         title="프로젝트 관리"
-        description={getDescription(role, view)}
+        description={getDescription(role, resolvedView)}
       />
 
       <div className="flex w-full max-w-[1082px] flex-col">
-        <div className="flex items-center justify-between gap-4">
-          {!isPmChallenger && (
-            <ChapterSelectHeader value={chapterId} onValueChange={setChapterId} />
+        <div
+          className={cn(
+            'flex items-center justify-between gap-4',
+            isPmChallenger ? 'pb-0' : 'pb-8',
           )}
-          {role !== 'HQ_ADMIN' && (
-            <Button size="sm" className="ml-auto h-11 shrink-0">
+        >
+          {!isPmChallenger && allChapters.length > 0 && (
+            <SegmentedControl
+              aria-label="지부 선택"
+              items={allChapters.map((c) => ({ value: String(c.id), label: c.name }))}
+              value={String(selectedChapterId ?? allChapters[0]?.id ?? '')}
+              onValueChange={(v) => !isChapterLeader && setSelectedChapterId(Number(v))}
+              className={cn(
+                '[&_[role=radio]:not([data-checked])]:text-teal-600',
+                isChapterLeader && '[&_[role=radio]:not([data-checked])]:cursor-not-allowed',
+              )}
+            />
+          )}
+          {role !== 'HQ_ADMIN' && (!isPmChallenger || projects.length > 0) && (
+            <Button
+              size="sm"
+              className="ml-auto h-11 shrink-0"
+              onClick={() => navigate({ to: '/demo-day/project-settings/projects/new' })}
+            >
               <div className="flex items-center gap-2">
                 <AddIcon size={16} />
                 프로젝트 등록
@@ -224,7 +325,10 @@ const ProjectsPage = () => {
 
         {projects.length === 0 ? (
           <div className="flex min-h-[400px] w-full items-center justify-center rounded-xl border border-teal-grey-100 bg-white shadow-drop-neutral-3">
-            <EmptyState showRegisterButton={isPmChallenger} />
+            <EmptyState
+              showRegisterButton={isPmChallenger}
+              onRegister={() => navigate({ to: '/demo-day/project-settings/projects/new' })}
+            />
           </div>
         ) : isPmChallenger ? (
           <ul className="mt-2 flex flex-col gap-[10px]">
@@ -233,10 +337,12 @@ const ProjectsPage = () => {
                 <ProjectManagementCard
                   project={project}
                   role={role}
-                  ownChapterId={ownChapterId ?? ''}
                   isPmChallenger
                   isMatchingPeriod={isMatchingPeriod}
                   onCardClick={() => setSelectedProject(project)}
+                  onViewApplications={() =>
+                    navigate({ to: '/demo-day/team-matching/applications' })
+                  }
                   onDelete={() => setDeleteTarget(project)}
                 />
               </li>
@@ -250,7 +356,7 @@ const ProjectsPage = () => {
               return (
                 <>
                   {webProjects.length > 0 && (
-                    <section className="mt-8 flex flex-col">
+                    <section className="flex flex-col">
                       <h2 className="mb-[10px] text-title-2-semibold">Web</h2>
                       <ul className="flex flex-col gap-[10px]">
                         {webProjects.map((project) => (
@@ -258,10 +364,18 @@ const ProjectsPage = () => {
                             <ProjectManagementCard
                               project={project}
                               role={role}
-                              ownChapterId={ownChapterId ?? ''}
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
+                              onViewApplications={() =>
+                                navigate({ to: '/demo-day/team-matching/applications' })
+                              }
+                              onManageApproval={() =>
+                                navigate({
+                                  to: '/demo-day/project-settings/projects/$projectId',
+                                  params: { projectId: project.projectId },
+                                })
+                              }
                               onDelete={() => setDeleteTarget(project)}
                             />
                           </li>
@@ -278,10 +392,18 @@ const ProjectsPage = () => {
                             <ProjectManagementCard
                               project={project}
                               role={role}
-                              ownChapterId={ownChapterId ?? ''}
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
+                              onViewApplications={() =>
+                                navigate({ to: '/demo-day/team-matching/applications' })
+                              }
+                              onManageApproval={() =>
+                                navigate({
+                                  to: '/demo-day/project-settings/projects/$projectId',
+                                  params: { projectId: project.projectId },
+                                })
+                              }
                               onDelete={() => setDeleteTarget(project)}
                             />
                           </li>
@@ -294,11 +416,17 @@ const ProjectsPage = () => {
             })()}
           </div>
         )}
+        <div ref={sentinelRef} className="h-1" />
       </div>
 
       <RadixDialog.Root
         open={selectedProject !== null}
-        onOpenChange={(open) => !open && setSelectedProject(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTeamPanelOpen(false);
+            setSelectedProject(null);
+          }
+        }}
       >
         <RadixDialog.Portal>
           <RadixDialog.Overlay asChild>
@@ -332,14 +460,24 @@ const ProjectsPage = () => {
                   }))}
                   actions={getProjectDetailActions(
                     role,
-                    view,
-                    selectedProject,
-                    ownChapterId ?? '',
+                    resolvedView,
                     isApplicationPeriod,
                     isMatchingPeriod,
+                    planUrl,
+                    () =>
+                      navigate({
+                        to: '/demo-day/project-settings/projects/$projectId',
+                        params: { projectId: selectedProject.projectId },
+                      }),
+                    () => setTeamPanelOpen(true),
                   )}
                 />
               </div>
+              <TeamCompositionPanel
+                open={teamPanelOpen}
+                onOpenChange={setTeamPanelOpen}
+                recruitments={teamRecruitments}
+              />
             </RadixDialog.Content>
           )}
         </RadixDialog.Portal>
