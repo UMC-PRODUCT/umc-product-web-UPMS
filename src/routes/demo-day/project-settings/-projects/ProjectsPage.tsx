@@ -12,12 +12,12 @@ import {
   ProjectManagementCard,
   type RecruitPart,
 } from '@/features/project-management';
+import { deleteProject } from '@/features/project-management/api/deleteProject';
+import { managedProjectsInfiniteQueryOptions } from '@/features/project-management/api/managedProjectsQuery';
 import { cn } from '@/shared/lib/cn';
 import ProjectCard from '@/widgets/card/projectCard';
 import { useAppToast } from '@/widgets/toast';
 
-import { deleteProject } from './api/deleteProject';
-import { managedProjectsInfiniteQueryOptions } from './api/managedProjectsQuery';
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
 
 const BREADCRUMBS = [
