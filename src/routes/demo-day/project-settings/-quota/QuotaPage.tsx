@@ -42,6 +42,7 @@ const initDraftFromProjects = (projects: ProjectRow[]): DraftValues =>
 const QuotaPage = () => {
   const canEdit = useProjectSettingsAccess() === 'FULL';
   const gisuId = useSessionStore((s) => s.session.gisuId);
+  const role = useSessionStore((s) => s.session.role);
   const serverChapterId = useSessionStore((s) => s.session.serverChapterId);
 
   // 지부 선택
@@ -173,7 +174,7 @@ const QuotaPage = () => {
     });
   };
 
-  const isChapterLeader = serverChapterId != null;
+  const isChapterLeader = role === 'CHAPTER_ADMIN';
 
   const chapterItems = (chaptersData ?? []).map((c) => ({
     value: String(c.id),
