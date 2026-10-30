@@ -1,25 +1,20 @@
 import type { SelectOption } from '@umc-product/react';
 
-import { MOCK_CHAPTERS } from '@/entities/chapter';
-
 import type { ApplicationFilterKey, ApplicationFilterValues } from './types';
 
-const byKoreanName = (a: string, b: string) => a.localeCompare(b, 'ko');
 const toOptions = (labels: string[]): SelectOption[] =>
   labels.map((label) => ({ value: label, label }));
 
 // 빈 배열 = 선택 없음 (전체 내역)
 export const INITIAL_APPLICATION_FILTERS: ApplicationFilterValues = {
-  chapter: [],
   school: [],
   part: [],
   round: [],
   recruitStatus: [],
-  applyStatus: [],
 };
 
 // 피그마 "메뉴 드롭다운 케이스 정리" 기준
-// TODO: 지부·학교 목록 API 연동, 지원 상태 값 기획 확인 (케이스 정리에 없음)
+// 학교 보기는 화면마다 달라서(어드민: 고른 지부 소속 학교, PM: 지원자들의 학교) 화면에서 채움
 export const APPLICATION_FILTERS: {
   key: ApplicationFilterKey;
   label: string;
@@ -27,18 +22,10 @@ export const APPLICATION_FILTERS: {
   multiple?: boolean;
 }[] = [
   {
-    key: 'chapter',
-    label: '지부',
-    options: [...MOCK_CHAPTERS]
-      .sort((a, b) => byKoreanName(a.name, b.name))
-      .map(({ id, name }) => ({ value: id, label: name })),
-  },
-  {
     key: 'school',
     label: '학교',
     multiple: true,
-    // UI 표기는 "~학교" 없이 (예: 가톨릭대)
-    options: toOptions(MOCK_CHAPTERS.flatMap(({ schools }) => schools).sort(byKoreanName)),
+    options: [],
   },
   {
     key: 'part',
@@ -62,14 +49,6 @@ export const APPLICATION_FILTERS: {
       { value: '1', label: '1차' },
       { value: '2', label: '2차' },
       { value: '3', label: '3차' },
-    ],
-  },
-  {
-    key: 'applyStatus',
-    label: '지원 상태',
-    options: [
-      { value: 'APPLIED', label: '지원 완료' },
-      { value: 'NOT_APPLIED', label: '지원 전' },
     ],
   },
 ];
