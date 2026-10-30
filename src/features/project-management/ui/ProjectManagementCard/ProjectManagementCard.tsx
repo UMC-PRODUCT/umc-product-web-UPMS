@@ -28,10 +28,8 @@ const PART_LABEL: Record<RecruitPart, string> = {
   MOBILE_PE: 'Mobile PE',
 };
 
-const canDeleteProject = (role: Role, projectChapterId: string, ownChapterId: string) => {
-  if (role === 'SUPER_ADMIN' || role === 'CHAPTER_ADMIN') return true;
-  if (role === 'HQ_LEAD') return projectChapterId === ownChapterId;
-  return false;
+const canDeleteProject = (role: Role) => {
+  return role === 'SUPER_ADMIN' || role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN';
 };
 
 // 파트별 모집 현황 행 컴포넌트
@@ -59,7 +57,6 @@ const RecruitmentRow = ({ part, applied, capacity, status }: PartRecruitment) =>
 type ProjectManagementCardProps = {
   project: ManagedProject;
   role: Role;
-  ownChapterId: string;
   isPmChallenger?: boolean;
   isApplicationPeriod?: boolean;
   isMatchingPeriod?: boolean;
@@ -72,7 +69,6 @@ type ProjectManagementCardProps = {
 const ProjectManagementCard = ({
   project,
   role,
-  ownChapterId,
   isPmChallenger = false,
   isApplicationPeriod = false,
   isMatchingPeriod = true,
@@ -81,16 +77,7 @@ const ProjectManagementCard = ({
   onManageApproval,
   onDelete,
 }: ProjectManagementCardProps) => {
-  const {
-    projectName,
-    logoUrl,
-    thumbnailUrl,
-    pmName,
-    schoolName,
-    status,
-    recruitments,
-    chapterId,
-  } = project;
+  const { projectName, logoUrl, thumbnailUrl, pmName, schoolName, status, recruitments } = project;
   const statusTag = (isPmChallenger ? PM_STATUS_TAG : ADMIN_STATUS_TAG)[status];
 
   // 역할, 기간별 메뉴 아이템 구성
@@ -114,7 +101,7 @@ const ProjectManagementCard = ({
       { label: '지원 현황 확인하기', onClick: onViewApplications },
       { label: '프로젝트 승인 관리', onClick: onManageApproval },
     ];
-    if (canDeleteProject(role, chapterId, ownChapterId)) {
+    if (canDeleteProject(role)) {
       items.push({
         label: <span className={isApplicationPeriod ? undefined : 'text-error'}>삭제</span>,
         onClick: onDelete,

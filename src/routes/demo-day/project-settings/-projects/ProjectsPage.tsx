@@ -36,8 +36,6 @@ const PART_LABEL: Record<RecruitPart, string> = {
 const getProjectDetailActions = (
   role: Role,
   view: View,
-  project: ManagedProject,
-  ownChapterId: string,
   isApplicationPeriod: boolean,
   isMatchingPeriod: boolean,
 ): ReactNode => {
@@ -102,12 +100,8 @@ const getProjectDetailActions = (
     );
   }
 
-  // 기본 - Admin(중앙), SUPER_ADMIN, 소속 지부 지부장
-  if (
-    role === 'HQ_ADMIN' ||
-    role === 'SUPER_ADMIN' ||
-    (role === 'HQ_LEAD' && project.chapterId === ownChapterId)
-  ) {
+  // 기본 - SUPER_ADMIN, HQ_LEAD(총괄/부총괄), CHAPTER_ADMIN(지부장)
+  if (role === 'SUPER_ADMIN' || role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN') {
     return (
       <>
         {usersButton}
@@ -119,13 +113,13 @@ const getProjectDetailActions = (
     );
   }
 
-  // 기본 - 타 지부 지부장, 학교 운영진(CHAPTER_ADMIN)
-  if (role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN') {
+  // HQ_ADMIN - 조회만 가능
+  if (role === 'HQ_ADMIN') {
     return (
       <>
         {usersButton}
         {planButton}
-        {recruitButton}
+        {recruitButtonDisabled}
       </>
     );
   }
@@ -294,7 +288,6 @@ const ProjectsPage = () => {
                 <ProjectManagementCard
                   project={project}
                   role={role}
-                  ownChapterId={String(ownChapterId ?? '')}
                   isPmChallenger
                   isMatchingPeriod={isMatchingPeriod}
                   onCardClick={() => setSelectedProject(project)}
@@ -322,7 +315,6 @@ const ProjectsPage = () => {
                             <ProjectManagementCard
                               project={project}
                               role={role}
-                              ownChapterId={String(ownChapterId ?? '')}
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
@@ -351,7 +343,6 @@ const ProjectsPage = () => {
                             <ProjectManagementCard
                               project={project}
                               role={role}
-                              ownChapterId={String(ownChapterId ?? '')}
                               isApplicationPeriod={isApplicationPeriod}
                               isMatchingPeriod={isMatchingPeriod}
                               onCardClick={() => setSelectedProject(project)}
@@ -416,8 +407,6 @@ const ProjectsPage = () => {
                   actions={getProjectDetailActions(
                     role,
                     resolvedView,
-                    selectedProject,
-                    String(ownChapterId ?? ''),
                     isApplicationPeriod,
                     isMatchingPeriod,
                   )}
