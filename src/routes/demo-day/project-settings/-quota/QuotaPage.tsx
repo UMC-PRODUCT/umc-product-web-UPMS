@@ -11,7 +11,9 @@ import {
 import { useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
+import { useChapters } from '@/entities/chapter';
 import { useProjectSettingsAccess, useSessionStore } from '@/entities/session';
+import { cn } from '@/shared/lib/cn';
 import SearchBar from '@/widgets/searchBar/SearchBar';
 import { useAppToast } from '@/widgets/toast';
 
@@ -51,6 +53,8 @@ const QuotaPage = () => {
   const [search, setSearch] = useState('');
   const [debouncedSearch] = useDebounce(search, 300);
   const [schoolId, setSchoolId] = useState<number | undefined>(undefined);
+
+  const { data: chaptersData } = useChapters(gisuId ?? null);
 
   const { data, isError } = useQuery(
     partQuotasQueryOptions({
@@ -169,9 +173,11 @@ const QuotaPage = () => {
     });
   };
 
-  const chapterItems = (data?.chapters ?? []).map((c) => ({
-    value: String(c.chapterId!),
-    label: c.chapterName ?? '',
+  const isChapterLeader = serverChapterId != null;
+
+  const chapterItems = (chaptersData ?? []).map((c) => ({
+    value: String(c.id),
+    label: c.name,
   }));
 
   return (
@@ -188,8 +194,11 @@ const QuotaPage = () => {
           aria-label="지부 선택"
           items={chapterItems}
           value={String(selectedChapterId ?? data?.chapterId ?? '')}
-          onValueChange={(v) => setSelectedChapterId(Number(v))}
-          className="[&_[role=radio]:not([data-checked])]:text-teal-600"
+          onValueChange={(v) => !isChapterLeader && setSelectedChapterId(Number(v))}
+          className={cn(
+            '[&_[role=radio]:not([data-checked])]:text-teal-600',
+            isChapterLeader && '[&_[role=radio]:not([data-checked])]:cursor-not-allowed',
+          )}
         />
 
         <section className="mt-8 flex flex-col">
