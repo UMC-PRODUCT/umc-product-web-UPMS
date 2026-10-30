@@ -1,54 +1,61 @@
 import type { RefObject } from 'react';
 
-import type { QuotaTeam } from './mock';
-import { type Part, PARTS } from './types';
-
-const calcTotal = (values: Record<Part, number | null>) =>
-  PARTS.reduce((sum, p) => sum + (values[p] ?? 0), 0);
+import type { Column, ProjectRow } from './api/getPartQuotas';
+import type { DraftValues } from './types';
 
 type Props = {
-  team: QuotaTeam;
-  values: Record<Part, number | null>;
-  editingCell: { teamId: string; part: Part } | null;
+  project: ProjectRow;
+  values: DraftValues[string];
+  columns: Column[];
+  editingCell: { projectId: string; part: string } | null;
   inputRef: RefObject<HTMLInputElement | null>;
-  isMatchingPeriod: boolean;
   canEdit: boolean;
-  onCellClick: (teamId: string, part: Part, disabled: boolean) => void;
-  onCellChange: (teamId: string, part: Part, value: string) => void;
+  onCellClick: (projectId: string, part: string, disabled: boolean) => void;
+  onCellChange: (projectId: string, part: string, value: string) => void;
   onCellBlur: () => void;
 };
 
 const QuotaTableRow = ({
-  team,
+  project,
   values,
+  columns,
   editingCell,
   inputRef,
-  isMatchingPeriod,
   canEdit,
   onCellClick,
   onCellChange,
   onCellBlur,
 }: Props) => {
-  const total = calcTotal(values);
+  const projectId = String(project.projectId!);
+  const total = columns.reduce((sum, col) => sum + (values?.[col.part!] ?? 0), 0);
 
   return (
     <tr className="flex">
-      <td className="flex h-[60px] w-[170px] shrink-0 items-center justify-center border border-l-0 border-teal-grey-300 bg-fill-neutral-weaker-50">
-        <span className="text-[18px] leading-[1.4] font-semibold tracking-[-0.18px] text-teal-grey-700">
-          {team.teamName}
+      <td className="flex h-[60px] w-[170px] shrink-0 cursor-pointer items-center justify-center overflow-hidden border border-l-0 border-teal-grey-300 bg-fill-neutral-weaker-50 px-3">
+        <span
+          className="truncate text-[18px] leading-[1.4] font-semibold tracking-[-0.18px] text-teal-grey-700"
+          title={project.projectName ?? ''}
+        >
+          {project.projectName}
         </span>
       </td>
 
-      {PARTS.map((part) => {
-        const isNull = values[part] === null;
-        const isEditing = editingCell?.teamId === team.teamId && editingCell?.part === part;
-        const isDisabled = isNull;
+      {columns.map((col) => {
+        const part = col.part!;
+        const webPeQuota = values?.['WEB_PRODUCT_ENGINEER'] ?? 0;
+        const mobilePeQuota = values?.['MOBILE_PRODUCT_ENGINEER'] ?? 0;
+        const isPeConflict =
+          (part === 'WEB_PRODUCT_ENGINEER' && mobilePeQuota > 0) ||
+          (part === 'MOBILE_PRODUCT_ENGINEER' && webPeQuota > 0);
+        const isDisabled = values?.[part] === undefined || isPeConflict;
+        const isLocked = col.canEdit?.allowed === false;
+        const isEditing = editingCell?.projectId === projectId && editingCell?.part === part;
 
         if (isDisabled) {
           return (
             <td
               key={part}
-              className="flex h-[60px] w-[186.75px] shrink-0 items-center justify-center bg-teal-grey-75 text-[18px] leading-[1.4] font-semibold tracking-[-0.36px] text-teal-grey-300"
+              className="flex h-[60px] w-[186.75px] shrink-0 cursor-pointer items-center justify-center bg-teal-grey-75 text-[18px] leading-[1.4] font-semibold tracking-[-0.36px] text-teal-grey-300"
             >
               <span>0</span>
               <span className="font-medium text-teal-grey-300">명</span>
@@ -67,8 +74,16 @@ const QuotaTableRow = ({
                 type="number"
                 min={0}
                 className="w-full bg-transparent text-center text-[18px] leading-[1.4] font-semibold tracking-[-0.36px] text-teal-500 focus:outline-none"
-                value={values[part] ?? 0}
-                onChange={(e) => onCellChange(team.teamId, part, e.target.value)}
+                value={values[part] === 0 ? '' : values[part]}
+                onChange={(e) => onCellChange(projectId, part, e.target.value)}
+                onKeyDown={(e) => {
+                  if (
+                    !/^\d$/.test(e.key) &&
+                    !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)
+                  ) {
+                    e.preventDefault();
+                  }
+                }}
                 onBlur={onCellBlur}
               />
             </td>
@@ -78,8 +93,8 @@ const QuotaTableRow = ({
         return (
           <td
             key={part}
-            className={`flex h-[60px] w-[186.75px] shrink-0 items-center justify-center gap-0.25 border border-teal-grey-300 bg-fill-neutral-default leading-[1.4] ${canEdit && !isMatchingPeriod ? 'cursor-pointer hover:border hover:border-teal-500 hover:bg-teal-50' : 'cursor-default'}`}
-            onClick={() => onCellClick(team.teamId, part, isDisabled)}
+            className={`flex h-[60px] w-[186.75px] shrink-0 items-center justify-center gap-0.25 border border-teal-grey-300 bg-fill-neutral-default leading-[1.4] ${canEdit && !isLocked ? 'hover:border hover:border-teal-500 hover:bg-teal-50' : ''}`}
+            onClick={() => onCellClick(projectId, part, isDisabled)}
           >
             <span className="text-heading-4-semibold tracking-[-0.36px] text-teal-600">
               {values[part]}
@@ -89,10 +104,8 @@ const QuotaTableRow = ({
         );
       })}
 
-      <td className="flex h-[60px] flex-1 flex-col items-center justify-center gap-0.5 border border-r-0 border-teal-grey-300 bg-[#F6F7F7]">
-        <span className="text-body-3-medium leading-normal text-teal-grey-500">
-          {team.university}
-        </span>
+      <td className="flex h-[60px] min-w-[150px] flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 border border-r-0 border-teal-grey-300 bg-[#F6F7F7]">
+        <span className="text-body-3-medium leading-normal text-teal-grey-500">팀 배정 인원</span>
         <div className="flex items-start gap-0.5 text-[18px] leading-[1.4]">
           <span className="font-semibold tracking-[-0.36px] text-teal-600">{total}</span>
           <span className="font-medium text-teal-grey-500">명</span>
