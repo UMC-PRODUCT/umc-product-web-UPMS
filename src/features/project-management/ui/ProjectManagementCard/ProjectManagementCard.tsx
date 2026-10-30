@@ -29,8 +29,8 @@ const PART_LABEL: Record<RecruitPart, string> = {
 };
 
 const canDeleteProject = (role: Role, projectChapterId: string, ownChapterId: string) => {
-  if (role === 'SUPER_ADMIN') return true;
-  if (role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN') return projectChapterId === ownChapterId;
+  if (role === 'SUPER_ADMIN' || role === 'CHAPTER_ADMIN') return true;
+  if (role === 'HQ_LEAD') return projectChapterId === ownChapterId;
   return false;
 };
 
