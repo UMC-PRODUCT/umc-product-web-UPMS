@@ -30,7 +30,7 @@ export type Project = {
   thumbnailUrl: string | null; // 없으면 회색 칸
   pmName: string; // 닉네임/이름
   schoolName: string;
-  chapterId: string; // 프로젝트 소속 지부
+  chapterId: string | null; // 프로젝트 소속 지부 (서버 응답에 없어서 지부로 거른 조회일 때만 알 수 있음)
   description: string; // 200자 이내, 말줄임 없이 전문 표시
   platform: ServicePlatform;
   planUrl: string | null; // 기획 문서 링크

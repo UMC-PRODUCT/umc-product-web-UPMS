@@ -47,6 +47,13 @@ describe('isBasicInfoComplete', () => {
 
   it('썸네일이 없으면 미완료다', () => {
     expect(isBasicInfoComplete({ ...filledDraft(), thumbnail: null }, false)).toBe(false);
+    // 이어 쓰는 초안은 파일 대신 서버에 저장된 이미지 주소가 있으면 채워진 것
+    expect(
+      isBasicInfoComplete(
+        { ...filledDraft(), thumbnail: null, thumbnailUrl: 'https://img/t.png' },
+        false,
+      ),
+    ).toBe(true);
   });
 });
 

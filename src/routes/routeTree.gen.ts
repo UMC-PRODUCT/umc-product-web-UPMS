@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './__root'
 import { Route as IndexRouteImport } from './index'
 import { Route as DemoDayRouteRouteImport } from './demo-day/route'
 import { Route as GuideRouteImport } from './guide'
+import { Route as LoginRouteImport } from './login'
 import { Route as ProjectsRouteImport } from './projects'
 import { Route as DemoDayIndexRouteImport } from './demo-day/index'
 import { Route as DemoDayProjectSettingsRouteRouteImport } from './demo-day/project-settings/route'
@@ -44,6 +45,11 @@ const DemoDayRouteRoute = DemoDayRouteRouteImport.update({
 const GuideRoute = GuideRouteImport.update({
   id: '/guide',
   path: '/guide',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectsRoute = ProjectsRouteImport.update({
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/demo-day': typeof DemoDayRouteRouteWithChildren
   '/guide': typeof GuideRoute
+  '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/demo-day/project-settings': typeof DemoDayProjectSettingsRouteRouteWithChildren
   '/demo-day/': typeof DemoDayIndexRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/guide': typeof GuideRoute
+  '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/demo-day/project-settings': typeof DemoDayProjectSettingsRouteRouteWithChildren
   '/demo-day': typeof DemoDayIndexRoute
@@ -200,6 +208,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/demo-day': typeof DemoDayRouteRouteWithChildren
   '/guide': typeof GuideRoute
+  '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/demo-day/project-settings': typeof DemoDayProjectSettingsRouteRouteWithChildren
   '/demo-day/': typeof DemoDayIndexRoute
@@ -225,6 +234,7 @@ export interface FileRouteTypes {
     | '/'
     | '/demo-day'
     | '/guide'
+    | '/login'
     | '/projects'
     | '/demo-day/project-settings'
     | '/demo-day/'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/guide'
+    | '/login'
     | '/projects'
     | '/demo-day/project-settings'
     | '/demo-day'
@@ -267,6 +278,7 @@ export interface FileRouteTypes {
     | '/'
     | '/demo-day'
     | '/guide'
+    | '/login'
     | '/projects'
     | '/demo-day/project-settings'
     | '/demo-day/'
@@ -291,6 +303,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DemoDayRouteRoute: typeof DemoDayRouteRouteWithChildren
   GuideRoute: typeof GuideRoute
+  LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRoute
 }
 
@@ -315,6 +328,13 @@ declare module '@tanstack/react-router' {
       path: '/guide'
       fullPath: '/guide'
       preLoaderRoute: typeof GuideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/projects': {
@@ -550,6 +570,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DemoDayRouteRoute: DemoDayRouteRouteWithChildren,
   GuideRoute: GuideRoute,
+  LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRoute,
 }
 export const routeTree = rootRouteImport

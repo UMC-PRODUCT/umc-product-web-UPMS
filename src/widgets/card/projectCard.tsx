@@ -44,8 +44,11 @@ const ProjectCard = ({
   <article
     className={`flex w-[648px] flex-col overflow-hidden rounded-[20px] bg-white shadow-drop-neutral-3 ${className}`}
   >
-    <div className="aspect-[2/1] w-full bg-teal-grey-100">
-      {thumbnailUrl && <img src={thumbnailUrl} alt="" className="size-full object-cover" />}
+    {/* 등록한 이미지 규격과 관계없이 372:186 비율 칸을 꽉 채워 자름 */}
+    <div className="relative aspect-[2/1] w-full shrink-0 overflow-hidden bg-teal-grey-100">
+      {thumbnailUrl && (
+        <img src={thumbnailUrl} alt="" className="absolute inset-0 size-full object-cover" />
+      )}
     </div>
     <div className="flex flex-col gap-8 p-5">
       <div className="flex flex-col gap-6">

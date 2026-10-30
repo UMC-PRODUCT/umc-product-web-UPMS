@@ -1,5 +1,7 @@
 import axios, { AxiosError } from 'axios';
 
+import { getAccessToken } from './authToken';
+
 export interface ApiResponse<T> {
   success?: boolean;
   code?: string;
@@ -22,11 +24,13 @@ export class ApiError extends Error {
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   timeout: 10_000,
+  // 배열 쿼리를 서버(Spring) 형식 ?parts=A&parts=B 로 보냄 (기본값은 parts[]=A)
+  paramsSerializer: { indexes: null },
 });
 
-// TODO: 로그인 연동 시 로그인 쪽에서 받은 토큰으로 교체. 지금은 개발용 토큰만 붙임
+// 로그인으로 받은 토큰을 붙이고, 없으면 개발용 토큰을 씀
 apiClient.interceptors.request.use((config) => {
-  const token = import.meta.env.VITE_DEV_ACCESS_TOKEN;
+  const token = getAccessToken() ?? import.meta.env.VITE_DEV_ACCESS_TOKEN;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });

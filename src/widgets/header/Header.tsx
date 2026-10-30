@@ -1,8 +1,12 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LinkProps } from '@tanstack/react-router';
-import { useLocation } from '@tanstack/react-router';
-import { Header as UmcHeader, HeaderActionButton } from '@umc-product/react';
+import { useLocation, useNavigate } from '@tanstack/react-router';
+import { HeaderActionButton, HeaderDesktop, HeaderProfileMenu } from '@umc-product/react';
 
-import profileDefault from './assets/profile-default.svg';
+import { myInfoQueryOptions, useSessionStore } from '@/entities/session';
+import { clearAuthTokens } from '@/shared/api/authToken';
+
+import { toProfileMenu } from './toProfileMenu';
 
 type HeaderNavItem = { label: string; href: NonNullable<LinkProps['to']> };
 
@@ -13,25 +17,43 @@ const NAV_ITEMS: HeaderNavItem[] = [
   { label: '사용 가이드', href: '/guide' },
 ];
 
+const LOGIN_PATH = '/login';
+
 const Header = () => {
   const pathname = useLocation({ select: (location) => location.pathname });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const role = useSessionStore((state) => state.session.role);
+  // 로그인 화면에서는 토큰이 없어 내 정보를 부르지 않음 (루트 beforeLoad가 이미 불러와 캐시에 있음)
+  const { data: profileMenu } = useQuery({
+    ...myInfoQueryOptions,
+    enabled: pathname !== LOGIN_PATH,
+    select: (myInfo) => toProfileMenu(myInfo, role),
+  });
+
+  // TODO: 정식 로그인이 붙으면 서버 로그아웃(TOKEN-002)으로 교체. 지금은 QA용 토큰만 지우고 로그인 화면으로
+  const handleLogout = () => {
+    clearAuthTokens();
+    queryClient.clear();
+    void navigate({ to: LOGIN_PATH, search: { redirect: pathname } });
+  };
 
   return (
-    <UmcHeader
+    <HeaderDesktop
       navItems={NAV_ITEMS}
       currentPath={pathname}
       actions={
         <>
           <HeaderActionButton>문의사항</HeaderActionButton>
-          <span className="relative size-10 shrink-0 overflow-clip rounded-full bg-[#e9ecec]">
-            <img
-              src={profileDefault}
-              alt="프로필"
-              width={36}
-              height={36}
-              className="absolute top-[7px] left-1/2 block max-w-none -translate-x-1/2"
+          {profileMenu && (
+            <HeaderProfileMenu
+              profile={profileMenu.profile}
+              generations={profileMenu.generations}
+              generation={profileMenu.generation}
+              // TODO: 계정 설정 화면이 생기면 연결
+              onLogout={handleLogout}
             />
-          </span>
+          )}
         </>
       }
     />
