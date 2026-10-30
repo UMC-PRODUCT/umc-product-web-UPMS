@@ -6,7 +6,7 @@ import { Dialog as RadixDialog } from 'radix-ui';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { useChapters } from '@/entities/chapter';
-import { type Role, useSessionStore, type View } from '@/entities/session';
+import { getApplicationsView, type Role, useSessionStore, type View } from '@/entities/session';
 import {
   type ManagedProject,
   ProjectManagementCard,
@@ -197,13 +197,14 @@ const ProjectsPage = () => {
   // TODO: API 연동 - 현재 매칭 기간 여부
   const isMatchingPeriod = false;
 
-  const isPmChallenger = view === 'PM_CHALLENGER';
+  const resolvedView = getApplicationsView(role, view);
+  const isPmChallenger = resolvedView === 'PM_CHALLENGER';
   const navigate = useNavigate();
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     ...managedProjectsInfiniteQueryOptions({
       gisuId: gisuId ?? 0,
-      chapterId: isPmChallenger ? undefined : (chapterId ?? undefined),
+      chapterId: isPmChallenger ? (ownChapterId ?? undefined) : (chapterId ?? undefined),
     }),
     enabled: !!gisuId && (isPmChallenger || chapterId !== null),
   });
@@ -248,7 +249,7 @@ const ProjectsPage = () => {
         className="w-full max-w-[1082px]"
         breadcrumbs={BREADCRUMBS}
         title="프로젝트 관리"
-        description={getDescription(role, view)}
+        description={getDescription(role, resolvedView)}
       />
 
       <div className="flex w-full max-w-[1082px] flex-col">
@@ -265,7 +266,7 @@ const ProjectsPage = () => {
               )}
             />
           )}
-          {role !== 'HQ_ADMIN' && (
+          {role !== 'HQ_ADMIN' && !isPmChallenger && (
             <Button
               size="sm"
               className="ml-auto h-11 shrink-0"
@@ -414,7 +415,7 @@ const ProjectsPage = () => {
                   }))}
                   actions={getProjectDetailActions(
                     role,
-                    view,
+                    resolvedView,
                     selectedProject,
                     String(ownChapterId ?? ''),
                     isApplicationPeriod,
