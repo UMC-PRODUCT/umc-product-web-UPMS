@@ -263,8 +263,10 @@ export interface paths {
         /**
          * 파트별 정원 일괄 갱신
          * @description 본문의 파트 정원으로 전체 교체하며, 생략한 기존 파트는 삭제합니다. quota는 1 이상이어야 합니다.
-         *     최고관리자·해당 기수 총괄단·담당 지부장만 수정할 수 있습니다.
+         *     최고관리자·해당 기수 총괄단·담당 지부장만 수정할 수 있습니다. 운영진 본인이 작성한 초안에도 TO를 설정할 수 있습니다.
          *     파트별 1차 매칭 시작부터 3차 PM 판정 마감까지는 변경할 수 없으며, 배정 인원 미만·지부 인원 초과도 차단합니다.
+         *     Web PE와 Mobile PE는 동시에 모집할 수 없습니다.
+         *     초안은 최종 등록 시 공개 프로젝트를 포함한 지부 인원 상한을 검증합니다.
          *     변경한 셀만 저장하려면 PATCH /api/v1/projects/admin/part-quotas를 사용하세요.
          */
         put: operations["PROJECT-105"];
@@ -350,11 +352,55 @@ export interface paths {
         get: operations["PROJECT-106-GET"];
         /**
          * 지원 폼 저장
-         * @description 요청 본문을 지원 폼의 새 전체 상태로 저장합니다. 폼이 없으면 생성하고, 있으면 섹션, 질문, 옵션을 본문 구조와 맞춥니다. DRAFT 또는 PENDING_REVIEW 상태에서만 호출할 수 있습니다.
+         * @description 요청 본문을 지원 폼의 새 전체 상태로 저장합니다. 폼이 없으면 생성하고, 있으면 섹션, 질문, 옵션을 본문 구조와 맞춥니다.
+         *     DRAFT, PENDING_REVIEW 상태이거나, IN_PROGRESS 라도 지부에 열린 매칭 차수가 없을 때 호출할 수 있습니다.
+         *     <p>
+         *     본문에서 뺀 섹션에 이미 제출된 답변이 있으면 PROJECT-0026 (409) 으로 거절하고, 메시지에 섹션명과 답변한 지원자 수를 담습니다.
+         *     사용자에게 경고한 뒤 confirmDeleteAnsweredSections 를 true 로 보내면 섹션과 그 답변을 함께 삭제합니다.
          */
         put: operations["PROJECT-106"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/project/matching-rounds/chapters/{chapterId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 지부·매칭 유형별 매칭 차수 일괄 등록·수정
+         * @description 해당 지부·매칭 유형의 1·2·3차와 랜덤 매칭 일정을 한 번에 등록하거나 수정합니다.
+         *     - 최고관리자, 해당 기수 총괄단, 해당 지부장만 저장할 수 있습니다.
+         *     - type은 한 번만 지정하고, rounds에는 1·2·3차와 랜덤 매칭을 하나씩 모두 포함합니다. 개수가 4개가 아니면 400, phase가 중복되면 409 PROJECT-0309를 반환합니다.
+         *     - 기존 차수가 없으면 네 차수를 생성하고, 모두 있으면 phase로 찾아 ID를 유지한 채 이름·설명·일정을 수정합니다. 일부만 있으면 409 PROJECT-0309를 반환합니다.
+         *     - 1·2·3차는 startsAt < endsAt < decisionDeadline < resultPublishAt이어야 합니다.
+         *     - 랜덤 매칭은 decisionDeadline을 받지 않으며 endsAt을 결정 마감으로 저장합니다. startsAt~endsAt은 운영진 조정 기간입니다.
+         *     - resultPublishAt은 결정 마감으로부터 최소 5분 이후여야 하며, 위반 시 400 PROJECT-0301을 반환합니다.
+         *       1·2·3차 자동 선발이 결정 마감 후 기본 1분 뒤 실행되므로, 발표 전 선발 처리 시간을 확보하기 위한 간격입니다.
+         *     - 다음 차수는 이전 차수의 결정 마감과 발표 시각 이후에 시작해야 하며(409 PROJECT-0309), 같은 유형의 차수끼리 기간이 겹치면 409 PROJECT-0302를 반환합니다.
+         *     - 해당 지부·유형의 1차 매칭 시작 이후에는 수정할 수 없으며 400 PROJECT-0314를 반환합니다.
+         *     - 하나라도 검증에 실패하면 전체 변경을 저장하지 않습니다.
+         */
+        put: operations["PROJECT-MATCHING-104"];
+        post?: never;
+        /**
+         * 지부·매칭 유형별 매칭 차수 일괄 삭제
+         * @description 해당 지부에서 type으로 지정한 매칭 유형의 차수를 모두 삭제합니다.
+         *     - 최고관리자, 해당 기수 총괄단, 해당 지부장만 삭제할 수 있습니다.
+         *     - 해당 지부·유형의 1차 시작 시각부터는 삭제할 수 없으며 400 PROJECT-0314를 반환합니다.
+         *     - 자동 선발이 실행된 차수가 있으면 400 PROJECT-0306을 반환합니다.
+         *     - 지원서가 연결된 차수가 있으면 409 PROJECT-0304를 반환합니다.
+         *     - 삭제할 차수가 없으면 404 PROJECT-0300을 반환합니다.
+         *     - 하나라도 삭제할 수 없으면 전체 차수를 삭제하지 않습니다.
+         */
+        delete: operations["PROJECT-MATCHING-105"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1866,7 +1912,10 @@ export interface paths {
         put?: never;
         /**
          * 프로젝트 제출
-         * @description DRAFT 상태의 프로젝트를 제출하여 PENDING_REVIEW로 전이합니다. 작성자(creator)만 호출 가능.
+         * @description 작성자(creator)가 DRAFT 프로젝트를 제출합니다. PM 제출은 PENDING_REVIEW(승인대기)로 전이합니다.
+         *     해당 프로젝트의 관리 권한이 있는 최고관리자·해당 기수 총괄단·해당 지부장이 제출하면
+         *     TO와 지원 폼을 검증한 뒤 IN_PROGRESS(승인완료)로 전이하고 지원 폼도 함께 공개합니다.
+         *     자동 공개 검증이 실패하면 초안 상태를 유지합니다. 응답의 status는 실제 처리 상태입니다.
          */
         post: operations["PROJECT-107"];
         delete?: never;
@@ -1912,6 +1961,7 @@ export interface paths {
          * 프로젝트 팀원 추가
          * @description PLAN 파트는 기존 보조 PM 관리 권한을 사용합니다.
          *     일반 파트는 해당 기수 총괄단·담당 지부장만 수동 배정할 수 있으며, 기수·파트·매칭 지부·중복·정원을 검증합니다.
+         *     일반 파트의 배정 가능 기간과 반영 시점은 운영진 수동 배정[PROJECT-402]과 같습니다.
          *     운영진 수동 배정 전용 경로는 /api/v1/projects/admin/{projectId}/members 입니다.
          */
         post: operations["PROJECT-004"];
@@ -2038,7 +2088,18 @@ export interface paths {
         put?: never;
         /**
          * 운영진 수동 배정
-         * @description 차수·마감과 관계없이 즉시 배정합니다. 현재 파트와 매칭 지부를 검증하며 TO 초과·중복 배정은 거부합니다.
+         * @description 현재 파트와 매칭 지부를 검증하며 TO 초과·중복 배정은 거부합니다.
+         *     TO는 배정된 팀원과 PM이 합격 처리했지만 아직 팀원으로 반영되지 않은 지원자를 포함해 검증합니다.
+         *     배정된 팀원으로 TO가 가득 찼으면 409(PROJECT-0106), 미반영 합격자를 포함해 가득 찼으면 409(PROJECT-0107)를 반환합니다.
+         *
+         *     배정 가능 기간
+         *     디자이너(DESIGN)는 PLAN_DESIGN 매칭 차수, 개발자(WEB 등 개발 파트)는 PLAN_DEVELOPER 매칭 차수일때만 수동 배정이 가능합니다.
+         *     - 1차 지원 시작부터 1차 PM 결정 마감 전까지
+         *     - 1차 결과 공개부터 2차 PM 결정 마감 전까지
+         *     - 2차 결과 공개부터 3차 PM 결정 마감 전까지
+         *     - 랜덤 매칭 완료 후 조정 시작부터 조정 종료 전까지 (최종 결과 공개 시 공개 명단에 반영)
+         *
+         *     그 외 기간에는 409(PROJECT-0103)를 반환합니다.
          */
         post: operations["PROJECT-402"];
         delete?: never;
@@ -2105,24 +2166,29 @@ export interface paths {
          * 매칭 차수 목록 조회
          * @description 매칭 차수 목록을 조회합니다.
          *     - chapterId가 있으면 해당 지부의 매칭 차수만 startsAt 오름차순으로 반환합니다.
+         *     - type을 지정하면 해당 매칭 유형만 조회하며, 생략하면 전체 유형을 조회합니다.
          *     - time이 있으면 해당 시점에 지원 가능한 1~3차(startsAt <= time <= endsAt)만 반환합니다. 랜덤 매칭은 제외합니다.
-         *     - time 기준 조회는 결과가 최대 1건이 되도록 chapterId와 함께 요청해야 하며, chapterId 없이 time만 요청하면 400을 반환합니다.
+         *     - time 기준 조회는 chapterId와 함께 요청해야 하며, chapterId 없이 time만 요청하면 400을 반환합니다.
+         *     - 서로 다른 유형이 동시에 진행 중이면 유형별 차수가 함께 반환될 수 있습니다.
          *     - time이 없고 chapterId도 없으면 전체 매칭 차수를 startsAt 오름차순으로 반환합니다.
          */
         get: operations["PROJECT-MATCHING-001"];
         put?: never;
         /**
          * 매칭 차수 생성
-         * @description 매칭 차수를 생성합니다.
-         *     - 중앙운영사무국 총괄단 이상은 모든 지부에 생성할 수 있습니다.
-         *     - 지부장은 본인 지부에만 생성할 수 있습니다.
-         *     - 1~3차는 startsAt < endsAt < decisionDeadline < resultPublishAt 순서를 만족해야 합니다.
+         * @deprecated
+         * @description Deprecated: PUT /api/v1/project/matching-rounds/chapters/{chapterId}를 사용하세요.
+         *     매칭 차수를 생성합니다.
+         *     - 해당 지부·유형의 1차가 시작되면 최고관리자도 등록할 수 없으며 400 PROJECT-0314를 반환합니다.
+         *     - 최고관리자, 해당 기수 총괄단, 해당 기수·지부의 지부장만 사용할 수 있습니다.
+         *     - 1·2·3차는 startsAt < endsAt < decisionDeadline < resultPublishAt 순서를 만족해야 합니다.
          *     - 랜덤 매칭은 type=PLAN_DESIGN 또는 PLAN_DEVELOPER, phase=RANDOM_MATCHING으로 별도 등록합니다.
          *     - 랜덤 매칭은 startsAt < endsAt = decisionDeadline < resultPublishAt이며 지원서를 받지 않습니다.
          *     - 모든 차수의 resultPublishAt은 decisionDeadline으로부터 최소 5분 이후여야 하며, 위반 시 400 PROJECT-0301을 반환합니다.
-         *       1~3차 자동 선발이 PM 마감 후 기본 1분 뒤 실행되므로, 발표 전 선발 처리 시간을 확보하기 위한 간격입니다.
-         *     - 랜덤 매칭은 startsAt에 실행하고 resultPublishAt에 공개합니다.
-         *     - 같은 지부 내 기존 매칭 차수와 startsAt ~ decisionDeadline 기간이 중복되면 409를 반환합니다.
+         *       1·2·3차 자동 선발이 PM 마감 후 기본 1분 뒤 실행되므로, 발표 전 선발 처리 시간을 확보하기 위한 간격입니다.
+         *     - 랜덤 매칭은 같은 지부·유형의 3차 결과 공개 후 자동 실행하고 resultPublishAt에 공개합니다.
+         *       `startsAt~endsAt`은 운영진 조정 기간입니다.
+         *     - 같은 지부 내 기존 매칭 차수와 `startsAt ~ decisionDeadline` 기간이 중복되면 409를 반환합니다.
          *     - 동일 지부 내 type + phase 조합은 DB Unique Key로도 중복을 제한합니다.
          */
         post: operations["PROJECT-MATCHING-101"];
@@ -2143,12 +2209,11 @@ export interface paths {
         put?: never;
         /**
          * 매칭 차수 자동 선발 수동 실행
-         * @description 1~3차는 결정 마감(decisionDeadline) 이후 자동 선발하고, 랜덤 매칭은 시작 시각(startsAt)부터 실행합니다.
-         *     - 중앙운영사무국 총괄단 이상은 모든 지부의 매칭 차수에서 자동 선발을 실행할 수 있습니다.
-         *     - 지부장은 본인 지부의 매칭 차수에서만 자동 선발을 실행할 수 있습니다.
-         *     - 1~3차는 결정 마감 경과 전, 랜덤 매칭은 시작 시각 전에 실행할 수 없으며 400을 반환합니다.
+         * @description 1·2·3차는 결정 마감(decisionDeadline) 이후 자동 선발하고, 랜덤 매칭은 같은 지부·유형의 3차 결과 공개 후 실행합니다.
+         *     - 최고관리자, 해당 기수 총괄단, 해당 기수·지부의 지부장만 사용할 수 있습니다.
+         *     - 1·2·3차는 결정 마감 경과 전, 랜덤 매칭은 3차 결과 공개 전에 실행할 수 없으며 400을 반환합니다.
          *     - 이미 자동 선발이 실행된 매칭 차수에 대해서는 멱등 (no-op).
-         *     - 1~3차는 정책 매트릭스(디자이너 / 개발자)에 따라 SUBMITTED 우선 random 보충 후 부족하면 REJECTED 까지 override 합니다.
+         *     - 1·2·3차는 정책 매트릭스(디자이너 / 개발자)에 따라 SUBMITTED 우선 random 보충 후 부족하면 REJECTED 까지 override 합니다.
          *     - 랜덤 매칭은 지원서 없이 해당 유형의 챌린저를 잔여 정원에 배정합니다. 같은 기수에 ACTIVE 또는 PENDING_PUBLICATION 멤버가 있으면 제외합니다.
          *     - 합격자에게는 ProjectMember 가 자동으로 생성됩니다.
          *     - 발표 시각이 있는 차수는 PENDING_PUBLICATION 멤버만 생성하며, 지원서의 최종 합불은 결과 공개 시 반영합니다.
@@ -2626,6 +2691,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/member/blocks/{memberId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 회원 차단 */
+        post: operations["MEMBER-BLOCK-001"];
+        /** 회원 차단 해제 */
+        delete: operations["MEMBER-BLOCK-002"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/member-oauth": {
         parameters: {
             query?: never;
@@ -3059,6 +3142,23 @@ export interface paths {
         put?: never;
         /** Community thread leave */
         post: operations["COMMUNITY-THREAD-010"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/community/threads/{threadId}/kick/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Community thread 강퇴 확인 */
+        post: operations["COMMUNITY-THREAD-012"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4603,12 +4703,14 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * 프로젝트 팀원 상태 변경 (soft delete)
-         * @description 멤버 행을 보존한 채 status 를 변경합니다(COMPLETED/WITHDRAWN/DISMISSED 등).
-         *     변경 사유(reason)는 필수입니다. 보조 PM 관리는 기존 권한을 유지합니다.
-         *     일반 파트는 해당 기수 총괄단·담당 지부장만 변경할 수 있습니다.
-         *     활동 해제 시 연결 지원서는 불합격으로 변경하며, ACTIVE 복귀 시 수동 배정 검증을 다시 적용합니다.
-         *     종료(COMPLETED/ABORTED) 프로젝트와 메인 PM 은 거부됩니다. 동일 멤버 재등록이 필요하면 hard delete(DELETE) 를 사용하세요.
+         * 프로젝트 팀원 상태 변경
+         * @description 팀원 기록을 보존하며 활동 완료(COMPLETED)·중도 이탈(WITHDRAWN)·퇴출(DISMISSED)을 처리합니다. 변경 사유(reason)는 필수입니다.
+         *     - ACTIVE는 세 상태로 변경할 수 있으며, PENDING_PUBLICATION은 WITHDRAWN·DISMISSED로만 변경할 수 있습니다.
+         *     - 종료 상태 간 변경은 불가하며, 동일 상태를 다시 요청하면 기존 사유와 처리 시각을 유지합니다.
+         *     - ACTIVE·PENDING_PUBLICATION으로 직접 변경할 수 없습니다. 디자인·개발 팀원의 재배정은 [PROJECT-402]를 사용하세요.
+         *     - 매칭 기간 제한 없이 즉시 반영하며, 해제 예약이 있으면 취소합니다. 디자인·개발 팀원의 이탈·퇴출은 연결 지원서를 불합격으로 변경합니다.
+         *     디자인·개발 파트는 슈퍼어드민·해당 기수 총괄단·담당 지부장만 변경할 수 있으며, 보조 PM 관리는 기존 권한을 유지합니다.
+         *     종료(COMPLETED/ABORTED) 프로젝트와 메인 PM의 상태 변경은 불가합니다.
          */
         patch: operations["PROJECT-006"];
         trace?: never;
@@ -4660,6 +4762,7 @@ export interface paths {
         /**
          * 변경한 프로젝트 TO 셀 일괄 저장
          * @description 변경한 프로젝트·셀만 전달합니다. 누락된 셀·프로젝트는 유지하며 quota=0은 해당 파트의 모집 TO를 제거합니다.
+         *     Web PE와 Mobile PE는 동시에 모집할 수 없습니다(PROJECT-0255). 기존 파트 TO 0과 새 파트 TO를 함께 전달해 전환합니다.
          *     PM TO도 수정할 수 있으나 실제 PM·공동 PM 인원 미만으로 줄일 수 없습니다.
          *     파트별 1차 시작~3차 PM 결정 마감에는 변경을 차단합니다. PM TO는 두 매칭 중 하나라도 잠겨 있으면 차단합니다.
          *     발표 대기를 포함한 기존 배정 인원 미만 축소와 지부 파트별 인원 초과를 거부합니다. 부족은 허용합니다.
@@ -4681,9 +4784,11 @@ export interface paths {
         post?: never;
         /**
          * 매칭 차수 삭제
-         * @description 매칭 차수를 삭제합니다.
-         *     - 중앙운영사무국 총괄단 이상은 모든 지부의 매칭 차수를 삭제할 수 있습니다.
-         *     - 지부장은 본인 지부의 매칭 차수만 삭제할 수 있습니다.
+         * @deprecated
+         * @description Deprecated: DELETE /api/v1/project/matching-rounds/chapters/{chapterId}?type={type}를 사용하세요.
+         *     매칭 차수를 삭제합니다.
+         *     - 해당 지부·유형의 1차가 시작되면 최고관리자도 삭제할 수 없으며 400 PROJECT-0314를 반환합니다.
+         *     - 최고관리자, 해당 기수 총괄단, 해당 기수·지부의 지부장만 사용할 수 있습니다.
          *     - 해당 매칭 차수를 참조하는 지원서가 하나라도 있으면 삭제할 수 없으며 409를 반환합니다.
          *     - 자동 선발 또는 랜덤 매칭이 실행된 차수는 지원서 유무보다 먼저 검사하며, 삭제 요청에 400 PROJECT-0306을 반환합니다.
          */
@@ -4692,17 +4797,19 @@ export interface paths {
         head?: never;
         /**
          * 매칭 차수 수정
-         * @description 매칭 차수 정보를 부분 수정합니다.
-         *     - 중앙운영사무국 총괄단 이상은 모든 지부의 매칭 차수를 수정할 수 있습니다.
-         *     - 지부장은 본인 지부의 매칭 차수만 수정할 수 있습니다.
+         * @deprecated
+         * @description Deprecated: PUT /api/v1/project/matching-rounds/chapters/{chapterId}를 사용하세요.
+         *     매칭 차수 정보를 부분 수정합니다.
+         *     - 해당 지부·유형의 1차가 시작되면 최고관리자도 수정할 수 없으며 400 PROJECT-0314를 반환합니다.
+         *     - 최고관리자, 해당 기수 총괄단, 해당 기수·지부의 지부장만 사용할 수 있습니다.
          *     - 수정 요청 본문에는 chapterId를 포함하지 않습니다.
          *     - 매칭 차수가 소속된 chapterId는 수정할 수 없으며, 권한 및 기간 중복 검증도 기존 chapterId 기준으로 수행합니다.
          *     - 요청 본문에 제공되지 않은 필드는 기존 매칭 차수 값을 유지합니다.
          *     - 자동 선발 또는 랜덤 매칭 완료 후에는 이름·설명만 수정할 수 있습니다. 유형·차수·일정 변경은 400 PROJECT-0306을 반환합니다.
-         *     - 최종 일정은 1~3차의 경우 startsAt < endsAt < decisionDeadline < resultPublishAt 순서여야 합니다.
+         *     - 최종 일정은 1·2·3차의 경우 startsAt < endsAt < decisionDeadline < resultPublishAt 순서여야 합니다.
          *     - 랜덤 매칭은 startsAt < endsAt = decisionDeadline < resultPublishAt 순서여야 합니다.
          *     - 최종 resultPublishAt은 decisionDeadline으로부터 최소 5분 이후여야 하며, 위반 시 400 PROJECT-0301을 반환합니다.
-         *       1~3차 자동 선발이 PM 마감 후 기본 1분 뒤 실행되므로, 발표 전 선발 처리 시간을 확보하기 위한 간격입니다.
+         *       1·2·3차 자동 선발이 PM 마감 후 기본 1분 뒤 실행되므로, 발표 전 선발 처리 시간을 확보하기 위한 간격입니다.
          *     - 발표 시각이 없는 기존 차수는 resultPublishAt을 생략하면 미설정 상태를 유지합니다.
          *     - 같은 지부 내 다른 매칭 차수와 startsAt ~ decisionDeadline 기간이 중복되면 409를 반환합니다.
          */
@@ -6217,7 +6324,7 @@ export interface paths {
         /**
          * 단건 프로젝트 지원/매칭 현황 조회 (Deprecated)
          * @deprecated
-         * @description deprecated: `/api/v1/projects/statistics?projectIds={projectId}`를 사용해주세요.
+         * @description deprecated: `/api/v1/projects/statistics/applications?projectIds={projectId}`를 사용해주세요.
          *
          *     프로젝트 ID와 함께 멤버 목록을 포함하고 있고, FE단 재가공을 최소화해드리기 위해서 `roundApplicationStatistics` 및 `schoolApplicationStatistics` 필드를 두고 있습니다.
          *
@@ -6238,51 +6345,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/projects/statistics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * 프로젝트 지원 현황 조회
-         * @description 프로젝트 지원 현황 조회 API입니다.
-         *     projectIds 또는 chapterId 중 정확히 하나만 query parameter로 제공해야 합니다.
-         *
-         *     - projectIds 제공: 요청한 프로젝트의 지원 현황을 `projects` 배열로 반환합니다. 단건은 1개 값으로 요청하고, 다건은 같은 지부 프로젝트만 요청할 수 있습니다.
-         *     - chapterId 제공: 지부 전체 프로젝트 지원 현황을 반환합니다.
-         *
-         *     지부 내 모든 프로젝트 목록 및 각 프로젝트에 대한 프로젝트 멤버를 포함하며,
-         *     이는 `/api/v1/projects/{projectId}/statistics` 에서 제공하는 것과 동일한 형태입니다.
-         *     추가로 BFF 패턴을 적용하여 FE단 데이터 가공 책임을 줄이기 위해 `summary` 필드를 제공합니다.
-         *
-         *     응답 필드 설명:
-         *     - projects: 프로젝트별 지원 현황 목록입니다.
-         *     - projects[].projectMembers: 해당 프로젝트에 최종 합류한 ACTIVE ProjectMember 목록입니다.
-         *     - projects[].projectMembers[].applications: 해당 멤버가 해당 프로젝트에 작성한 지원 이력입니다. 강제 배정처럼 지원서 없이 합류한 경우 빈 배열입니다.
-         *     - projects[].roundApplicationStatistics: 프로젝트 단위의 매칭 차수별 지원서 수와 지원 가능 인원 수입니다.
-         *     - projects[].schoolApplicationStatistics: 프로젝트 단위의 매칭 차수별 학교 지원자 수입니다. 같은 차수 안에서는 memberId 기준으로 중복 제거합니다.
-         *     - summary.roundApplicationStatistics: 조회 범위 전체의 매칭 차수별 지원서 수와 지원 가능 인원 수입니다. `appliedMemberCount`는 지원서 수 합계이고, `availableMemberCount`는 지원 가능 챌린저 총원에서 이전 차수까지 이미 ProjectMember로 합류한 인원을 제외한 값입니다.
-         *     - summary.roundSchoolRankings: 조회 범위 전체의 매칭 차수별 학교 지원자 수입니다. 같은 차수 안에서는 memberId 기준으로 중복 제거합니다.
-         *     - summary.schoolMatchingStatistics: 학교별 지원 가능 총원, 매칭 완료 인원, 한 번이라도 지원한 인원 수입니다. `totalMemberCount`는 지원 가능한 ACTIVE 챌린저 수, `matchedMemberCount`는 ACTIVE ProjectMember 수, `appliedMemberCount`는 조회 범위에서 한 번이라도 지원한 memberId 기준 unique 인원 수입니다.
-         *     - summary.projectRoundStatistics: 프로젝트별 매칭 차수 지원 현황입니다. `appliedMemberCount`는 프로젝트와 차수 안에서 memberId 기준으로 중복 제거한 지원자 수이고, `matchedMemberCount`는 해당 프로젝트와 차수에서 매칭 완료된 인원 수입니다.
-         *
-         *     프로젝트별 지원자 목록은 `/api/v1/projects/{projectId}/applications`를 호출해서 조회해야 합니다.
-         *     공개 매칭 요약은 `/api/v1/projects/statistics/matchings`를 호출해서 조회해야 합니다.
-         *
-         *     권한: projectIds 조회는 각 프로젝트의 PO/Sub-PM(본인 프로젝트), 총괄단, 해당 지부장, 해당 지부 소속 학교 회장/부회장만 조회할 수 있습니다.
-         *     chapterId 조회는 총괄단(모든 지부), 해당 지부장, 해당 지부 소속 학교 회장/부회장만 조회할 수 있습니다. 그 외에는 403.
-         */
-        get: operations["PROJECT-STAT-002"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/projects/statistics/matchings": {
         parameters: {
             query?: never;
@@ -6291,15 +6353,108 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 지부 공개 프로젝트 매칭 요약 조회
-         * @description 로그인 사용자 누구나 조회할 수 있는 지부 내 공개 프로젝트 매칭 요약입니다.
-         *     멤버 ID와 지원서 ID는 노출하지 않고 ProjectMember 기준 집계 숫자만 반환합니다.
+         * 프로젝트 매칭 통계 조회
+         * @description 로그인 사용자 누구나 조회할 수 있는 지부 내 공개 프로젝트 매칭 통계입니다.
+         *     멤버 ID와 지원서 ID는 노출하지 않고 집계 숫자만 반환합니다.
+         *
+         *     화면에서 함께 사용하는 API
+         *     - 상단 매칭 통계 그래프: 이 API를 사용합니다.
+         *     - 하단 프로젝트별 매칭 명단·인원/TO: `GET /api/v1/projects/statistics/matching-overview?chapterId=...` (PROJECT-STAT-004)를 사용합니다.
+         *     - 운영진의 하단 조정 명단은 PROJECT-STAT-004에 `view=ADJUSTMENT`를 추가해 조회합니다. 상단 통계는 공개 결과를 기준으로 집계합니다.
          *
          *     집계 대상 프로젝트는 공개 프로젝트 목록과 동일하게 IN_PROGRESS, COMPLETED 상태만 포함합니다.
-         *     차수 귀속은 각 ProjectMember가 해당 프로젝트에 작성한 APPROVED 지원서 중 가장 오래된 매칭 차수를 사용합니다.
-         *     합격 지원서가 없으면 차수별 집계에서 제외하고 unclassifiedMatchingStatistics에 별도 집계합니다.
+         *     집계할 매칭 유형(PLAN_DESIGN 또는 PLAN_DEVELOPER)은 지원 통계와 동일하게 선택합니다.
+         *     진행 중인 1·2·3차의 유형을 사용하고, 없으면 가장 최근 종료된 1·2·3차의 유형을 사용합니다. 시작한 1·2·3차가 없으면 모든 배열이 비어 있습니다.
+         *     선택한 유형의 생성된 1·2·3차와 랜덤 매칭 전체를 집계합니다.
+         *
+         *     집계 기준
+         *     - 기준 유형의 1·2·3차와 랜덤 매칭을 집계합니다.
+         *     - 매칭 인원은 결과가 공개된 팀원을 배정된 차수 기준으로 셉니다. 배정된 차수가 없는 팀원은 제외합니다.
+         *     - 매칭 대상은 해당 기수·매칭 지부에서 활동 중인 기준 유형 챌린저입니다.
+         *     - 차수 배열은 생성된 차수만 차수 순서로 반환하며, 매칭 인원이 없어도 0명으로 반환합니다.
+         *
+         *     응답 항목
+         *     - roundMatchingStatistics: 차수별 매칭 인원과 매칭 대기 인원입니다. 매칭 대기 인원은 이전 차수까지 매칭된 인원을 뺀 값입니다.
+         *     - schoolMatchingStatistics: 학교별 누적 매칭 인원과 매칭 대상 총원입니다. 총원은 차수가 지나도 차감하지 않습니다.
+         *     - projectMatchingStatistics: 프로젝트별 누적 매칭 인원, 전체 TO, 차수별·파트별 매칭 인원과 TO입니다.
          */
         get: operations["PROJECT-STAT-003"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/statistics/matching-overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 프로젝트 매칭 결과 시트 조회
+         * @description 지부의 공개 프로젝트(IN_PROGRESS, COMPLETED)별 팀원 명단과 인원/TO를 조회합니다.
+         *
+         *     - 인원과 TO는 디자인·개발 파트만 집계합니다. (PM·보조 PM 제외)
+         *     - IN_PROGRESS 프로젝트는 활동 중(ACTIVE) 팀원을, COMPLETED 프로젝트는 활동을 마친(COMPLETED) 팀원을 포함합니다.
+         *     - 운영진 화면에서는 view=ADJUSTMENT로 요청해 주세요. 랜덤 매칭 후 최종 결과 공개 전까지는 어드민이 조정 중인 명단을, 그 외 시점에는 공개된 명단을 반환합니다.
+         *     - view=ADJUSTMENT는 SUPER_ADMIN, 해당 기수 총괄단, 해당 지부장만 요청할 수 있습니다. (그 외 403)
+         */
+        get: operations["PROJECT-STAT-004"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/projects/statistics/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 프로젝트 지원 통계 조회
+         * @description 디자인·개발 매칭의 차수별·학교별·프로젝트별 지원 현황을 조회합니다.
+         *     chapterId와 projectIds 중 하나만 보내야 하며, 둘 다 보내거나 둘 다 없으면 400을 반환합니다.
+         *
+         *     화면에서 함께 사용하는 API
+         *     - 상단 지원 통계 그래프: 이 API를 사용합니다.
+         *     - 하단 프로젝트 목록: `GET /api/v1/projects?gisuId=...&chapterId=...` (PROJECT-001)로 조회합니다.
+         *     - 프로젝트 지원자 목록: `GET /api/v1/projects/applications?projectIds=...` (APPLY-101-BATCH) 또는 `GET /api/v1/projects/{projectId}/applications` (APPLY-101)을 사용합니다.
+         *
+         *     조회 범위
+         *     - chapterId: 해당 지부의 프로젝트를 모두 집계합니다.
+         *     - projectIds: 지정한 프로젝트만 집계합니다. 모두 같은 기수·지부여야 하며, 아니면 400(PROJECT-0501)을 반환합니다.
+         *     - 임시저장(DRAFT)·승인대기(PENDING_REVIEW) 프로젝트는 제외하고, 중단(ABORTED)·완료(COMPLETED) 프로젝트는 포함합니다.
+         *
+         *     기준 차수(matchingRound)
+         *     - 진행 중인 1·2·3차가 있으면 그 차수를, 없으면 가장 최근에 종료된 1·2·3차를 기준으로 합니다.
+         *     - 기준 차수와 같은 유형(PLAN_DESIGN 또는 PLAN_DEVELOPER)의 1·2·3차만 집계합니다.
+         *     - 시작한 1·2·3차가 없으면 matchingRound는 null이고 모든 배열이 비어 있습니다.
+         *
+         *     집계 기준
+         *     - 지원 인원은 제출·합격·불합격 지원서를 낸 인원이며, 같은 차수에 여러 번 지원해도 1명으로 셉니다.
+         *     - 지원 가능 인원은 해당 지부에서 활동 중인 기준 유형 챌린저 수입니다. projectIds로 조회해도 지부 기준으로 계산합니다.
+         *     - 차수 배열은 생성된 1·2·3차만 차수 순서로 반환하며, 지원자가 없어도 0명으로 반환합니다.
+         *
+         *     응답 항목
+         *     - summary.roundApplicationStatistics: 차수별 지원 인원과 지원 가능 인원입니다. 지원 가능 인원은 이전 차수까지 매칭된 인원을 뺀 값입니다.
+         *     - summary.schoolApplicationStatistics: 학교별 지원 가능 총원과 차수별 지원 인원입니다. 총원은 차수가 지나도 차감하지 않습니다.
+         *     - summary.projectRoundStatistics: 프로젝트별 차수별 지원 인원입니다. 프로젝트 등록순으로 정렬합니다.
+         *
+         *     권한
+         *     - SUPER_ADMIN, 해당 기수 총괄단, 해당 지부장, 해당 지부 소속 학교 회장·부회장은 chapterId·projectIds 모두 조회할 수 있습니다.
+         *     - PO·Sub-PM은 본인 프로젝트만 projectIds로 조회할 수 있습니다.
+         *     - 권한이 없으면 403, 존재하지 않는 프로젝트가 포함되면 404를 반환합니다.
+         */
+        get: operations["PROJECT-STAT-002"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6360,6 +6515,7 @@ export interface paths {
          * @description 최고관리자는 모든 기수, 총괄단은 해당 기수 전체 지부, 지부장은 해당 기수 본인 지부를 조회합니다.
          *     일반 중앙운영·교육국은 해당 기수 전체 지부의 승인대기·등록완료만, PM은 본인 프로젝트를 조회합니다.
          *     학교 운영진 역할만으로는 관리 목록이 제공되지 않으며, PM 등 다른 정상 역할의 권한은 유지합니다.
+         *     chapterId를 전달하면 기존 조회 권한 범위 안에서 해당 지부만 필터합니다. 생략 시 기존 범위를 유지하며, 범위 밖이면 빈 목록입니다.
          *     정렬: 등록완료(IN_PROGRESS) → 승인대기(PENDING_REVIEW) → 임시저장(DRAFT) → 기타 상태.
          *     임시저장은 생성 시각 내림차순이며, 나머지는 요청 정렬(기본: 생성 시각·이름 오름차순)을 적용합니다. 최종 동률은 ID 오름차순입니다.
          */
@@ -6517,7 +6673,7 @@ export interface paths {
         };
         /**
          * 수동 배정 후보 조회
-         * @description 해당 기수·매칭 지부의 파트별 미배정 챌린저를 조회합니다. 발표 전 선발 인원과 합격 지원서 보유자는 제외합니다.
+         * @description 해당 기수·매칭 지부의 파트별 미배정 챌린저를 조회합니다. 발표 전 선발 인원과 합격 지원서 보유자는 제외합니다. 랜덤 매칭 조정 기간에는 조정 명단 기준으로 판단합니다.
          */
         get: operations["PROJECT-401"];
         put?: never;
@@ -6754,6 +6910,23 @@ export interface paths {
         };
         /** 내 프로필 조회 */
         get: operations["MEMBER-102"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/member/blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 내가 차단한 회원 목록 조회 */
+        get: operations["MEMBER-BLOCK-003"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7846,8 +8019,9 @@ export interface paths {
          *     DRAFT/PENDING_REVIEW/IN_PROGRESS 프로젝트 단계에서만 가능하며, 종료(COMPLETED/ABORTED) 프로젝트는 이력 보존을 위해 거부됩니다.
          *     상태 변경 히스토리를 남겨야 하면 [PROJECT-006] API 를 사용하세요.
          *     일반 파트의 제거는 해당 기수 총괄단·담당 지부장만 가능하며 연결 지원서를 불합격으로 변경합니다.
+         *     일반 파트의 해제 가능 기간과 반영 시점은 운영진 매칭 해제[PROJECT-403]과 같습니다.
          *     보조 PM 관리는 기존 권한을 유지합니다. 메인 PM 은 양도 API 로 변경해야 합니다.
-         *     reason 은 DB 에는 남지 않고 감사 로그로만 기록됩니다.
+         *     reason 은 감사 로그와 연결 지원서의 불합격 사유로 기록됩니다.
          */
         delete: operations["PROJECT-005"];
         options?: never;
@@ -7867,7 +8041,9 @@ export interface paths {
         post?: never;
         /**
          * 운영진 매칭 해제
-         * @description 팀 소속을 해제하고 연결 지원서는 불합격으로 변경합니다. 지원서·답변은 보존하며 차수·마감에 따른 제한은 없습니다.
+         * @description 팀 소속을 해제하고 연결 지원서는 불합격으로 변경합니다. 지원서·답변은 보존합니다.
+         *     해제 가능 기간은 수동 배정과 같으며, 그 외 기간에는 409(PROJECT-0103)를 반환합니다.
+         *     랜덤 매칭 조정 기간에 공개된 팀원의 해제는 최종 결과 공개 시 반영하고, 조정 기간에 배정한 팀원은 바로 취소합니다.
          */
         delete: operations["PROJECT-403"];
         options?: never;
@@ -8419,6 +8595,7 @@ export interface components {
             title?: string;
             description?: string;
             sections: components["schemas"]["ApplicationFormSection"][];
+            confirmDeleteAnsweredSections?: boolean;
         };
         UpsertApplicationFormResponse: {
             /** Format: int64 */
@@ -8428,6 +8605,53 @@ export interface components {
             title?: string;
             description?: string;
             sections?: components["schemas"]["ApplicationFormSection"][];
+        };
+        RoundRequest: {
+            name: string;
+            description?: string;
+            /** @enum {string} */
+            phase: "FIRST" | "SECOND" | "THIRD" | "RANDOM_MATCHING";
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+            /** Format: date-time */
+            decisionDeadline?: string;
+            /** Format: date-time */
+            resultPublishAt: string;
+        };
+        SaveProjectMatchingRoundsRequest: {
+            /** @enum {string} */
+            type: "PLAN_DESIGN" | "PLAN_DEVELOPER";
+            rounds: components["schemas"]["RoundRequest"][];
+        };
+        ProjectMatchingRoundResponse: {
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            description?: string;
+            /** @enum {string} */
+            type?: "PLAN_DESIGN" | "PLAN_DEVELOPER";
+            /** @enum {string} */
+            phase?: "FIRST" | "SECOND" | "THIRD" | "RANDOM_MATCHING";
+            /** Format: int64 */
+            chapterId?: number;
+            /** Format: date-time */
+            startsAt?: string;
+            /** Format: date-time */
+            endsAt?: string;
+            /** Format: date-time */
+            decisionDeadline?: string;
+            /** Format: date-time */
+            resultPublishAt?: string;
+            /** Format: date-time */
+            autoDecisionExecutedAt?: string;
+            /** Format: int64 */
+            autoDecisionExecutedMemberId?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
         };
         UpdateNoticeVoteResponseRequest: {
             /** @description 선택한 옵션 ID 목록. 빈 배열로 보내면 기존 응답이 취소됩니다. */
@@ -10298,6 +10522,12 @@ export interface components {
             /** @description 약관 동의 목록 */
             termsAgreements: components["schemas"]["TermConsentStatus"][];
         };
+        MemberBlockResponse: {
+            /** Format: int64 */
+            memberId?: number;
+            /** @description 처리 후 차단 상태. 차단 완료면 true, 차단 해제 완료면 false */
+            isBlocked?: boolean;
+        };
         AddOAuthRequest: {
             oAuthVerificationToken?: string;
         };
@@ -10755,6 +10985,11 @@ export interface components {
             isJoined?: boolean;
             /** @enum {string} */
             myRole?: "OWNER" | "ADMIN" | "MEMBER";
+            /**
+             * @description 요청자의 멤버십 상태. 참여한 적 없는 스레드는 null. ACTIVE: 참여 중, LEFT: 나감, KICKED: 강퇴됐지만 아직 확인 전(상세 조회는 허용돼 강퇴 안내를 보여줄 수 있음), KICKED_ACKNOWLEDGED: 강퇴를 확인함(이 상태가 되면 상세 조회도 차단됨)
+             * @enum {string}
+             */
+            membershipState?: "ACTIVE" | "LEFT" | "KICKED" | "KICKED_ACKNOWLEDGED";
             lastMessage?: components["schemas"]["CommunityThreadLastMessageResponse"];
             createdBy?: string;
             /** Format: date-time */
@@ -10776,8 +11011,11 @@ export interface components {
             memberId?: string;
             /** @enum {string} */
             role?: "OWNER" | "ADMIN" | "MEMBER";
-            /** @enum {string} */
-            state?: "ACTIVE" | "LEFT" | "KICKED";
+            /**
+             * @description 멤버십 상태. ACTIVE: 참여 중, LEFT: 나감, KICKED: 강퇴됐지만 아직 확인 전(목록에 비활성으로 노출됨), KICKED_ACKNOWLEDGED: 강퇴를 확인함(목록 조회에서 제외됨)
+             * @enum {string}
+             */
+            state?: "ACTIVE" | "LEFT" | "KICKED" | "KICKED_ACKNOWLEDGED";
             memberCount?: string;
         };
         InviteCommunityThreadMembersRequest: {
@@ -10798,7 +11036,7 @@ export interface components {
             /** Format: date-time */
             joinedAt?: string;
             /** @enum {string} */
-            state?: "ACTIVE" | "LEFT" | "KICKED";
+            state?: "ACTIVE" | "LEFT" | "KICKED" | "KICKED_ACKNOWLEDGED";
         };
         ReportCommunityThreadMessageRequest: {
             /** @enum {string} */
@@ -11645,7 +11883,7 @@ export interface components {
         };
         ChangeProjectMemberStatusRequest: {
             /** @enum {string} */
-            status: "PENDING_PUBLICATION" | "ACTIVE" | "COMPLETED" | "WITHDRAWN" | "DISMISSED" | "ACTIVE" | "COMPLETED" | "WITHDRAWN" | "DISMISSED";
+            status: "PENDING_PUBLICATION" | "ACTIVE" | "COMPLETED" | "WITHDRAWN" | "DISMISSED" | "COMPLETED" | "WITHDRAWN" | "DISMISSED";
             reason: string;
         };
         UpdateApplicationDecisionRequest: {
@@ -13540,7 +13778,7 @@ export interface components {
             /** Format: int64 */
             applicationFormId?: number;
         };
-        /** @description 지원서가 연결된 매칭 차수 정보 */
+        /** @description 통계에 사용하는 매칭 차수 정보 */
         ProjectMatchingRoundStatisticsResponse: {
             /**
              * Format: int64
@@ -13611,17 +13849,17 @@ export interface components {
             /** @description 매칭 차수별 지원자 학교 인원 수 */
             schoolApplicationStatistics?: components["schemas"]["RoundSchoolApplicationStatisticsResponse"][];
         };
-        /** @description 매칭 차수별 지원 완료 인원 수와 지원 가능 인원 수 */
+        /** @description 차수별 지원 현황 */
         RoundApplicationStatisticsResponse: {
             matchingRound?: components["schemas"]["ProjectMatchingRoundStatisticsResponse"];
             /**
              * Format: int64
-             * @description 지원 완료 인원 수
+             * @description 지원 인원 수
              */
             appliedMemberCount?: number;
             /**
              * Format: int64
-             * @description 지원 가능 인원 수
+             * @description 지원 가능 인원 수. 이전 차수까지 매칭된 인원을 뺀 값입니다.
              */
             availableMemberCount?: number;
         };
@@ -13789,126 +14027,280 @@ export interface components {
             description?: string;
             sections?: components["schemas"]["ApplicationFormSection"][];
         };
-        /** @description 지부 전체 프로젝트 지원/매칭 현황 응답 */
-        ChapterProjectStatisticsResponse: {
+        /** @description 파트별 누적 매칭 완료 인원 수와 모집 정원 */
+        ProjectMatchingPartStatisticsResponse: {
+            /**
+             * @description 파트
+             * @enum {string}
+             */
+            part?: "PLAN" | "DESIGN" | "WEB" | "ANDROID" | "IOS" | "NODEJS" | "SPRINGBOOT" | "ADMIN" | "WEB_PRODUCT_ENGINEER" | "MOBILE_PRODUCT_ENGINEER";
             /**
              * Format: int64
-             * @description 지부 ID
+             * @description 누적 매칭 완료 인원 수
              */
-            chapterId?: number;
-            /** @description 지부 내 프로젝트별 기존 지원/매칭 현황 */
-            projects?: components["schemas"]["ProjectStatisticsResponse"][];
-            summary?: components["schemas"]["ChapterProjectStatisticsSummaryResponse"];
-        };
-        /** @description 지부 단위 지원/매칭 요약 */
-        ChapterProjectStatisticsSummaryResponse: {
-            /** @description 매칭 차수별 지원 완료 인원 수와 지원 가능 총원 */
-            roundApplicationStatistics?: components["schemas"]["RoundApplicationStatisticsResponse"][];
-            /** @description 매칭 차수별 지원자 학교 순위 */
-            roundSchoolRankings?: components["schemas"]["RoundSchoolApplicationStatisticsResponse"][];
-            /** @description 학교별 지원 가능 총원, 지원 완료 인원 수, 매칭 완료 인원 수 */
-            schoolMatchingStatistics?: components["schemas"]["SchoolMatchingStatisticsResponse"][];
-            /** @description 프로젝트별 매칭 차수 인원 수 */
-            projectRoundStatistics?: components["schemas"]["ProjectRoundMemberStatisticsResponse"][];
-        };
-        /** @description 프로젝트 내 특정 매칭 차수의 지원 완료 인원 수와 매칭 완료 인원 수 */
-        ProjectRoundMemberCountResponse: {
-            matchingRound?: components["schemas"]["ProjectMatchingRoundStatisticsResponse"];
+            matchedMemberCount?: number;
             /**
              * Format: int64
-             * @description 지원 완료 인원 수
+             * @description 모집 정원(TO)
              */
-            appliedMemberCount?: number;
+            quota?: number;
+        };
+        /** @description 차수별 매칭 완료 인원 수 */
+        ProjectMatchingPhaseCountResponse: {
+            /**
+             * @description 매칭 차수
+             * @enum {string}
+             */
+            phase?: "FIRST" | "SECOND" | "THIRD" | "RANDOM_MATCHING";
             /**
              * Format: int64
              * @description 매칭 완료 인원 수
              */
             matchedMemberCount?: number;
         };
-        /** @description 프로젝트별 매칭 차수 인원 수 */
-        ProjectRoundMemberStatisticsResponse: {
+        /** @description 차수별 매칭 현황 */
+        ProjectMatchingPhaseStatisticsResponse: {
+            /**
+             * @description 매칭 차수
+             * @enum {string}
+             */
+            phase?: "FIRST" | "SECOND" | "THIRD" | "RANDOM_MATCHING";
+            /**
+             * Format: int64
+             * @description 매칭 완료 인원 수
+             */
+            matchedMemberCount?: number;
+            /**
+             * Format: int64
+             * @description 매칭 대기 인원 수. 이전 차수까지 매칭된 인원을 뺀 값입니다.
+             */
+            availableMemberCount?: number;
+        };
+        /** @description 프로젝트별 매칭 현황 */
+        ProjectMatchingProjectStatisticsResponse: {
             /**
              * Format: int64
              * @description 프로젝트 ID
              */
             projectId?: number;
-            /** @description 매칭 차수별 인원 수 */
-            matchingRounds?: components["schemas"]["ProjectRoundMemberCountResponse"][];
+            /** @description 프로젝트명 */
+            projectName?: string;
+            /**
+             * Format: int64
+             * @description 누적 매칭 완료 인원 수
+             */
+            matchedMemberCount?: number;
+            /**
+             * Format: int64
+             * @description 기준 매칭 유형 파트의 모집 정원(TO) 합계
+             */
+            quota?: number;
+            /** @description 차수별 매칭 완료 인원 수 */
+            rounds?: components["schemas"]["ProjectMatchingPhaseCountResponse"][];
+            /** @description 파트별 누적 매칭 완료 인원 수와 모집 정원 */
+            parts?: components["schemas"]["ProjectMatchingPartStatisticsResponse"][];
         };
-        /** @description 학교별 지원 가능 총원, 지원 완료 인원 수, 매칭 완료 인원 수 */
-        SchoolMatchingStatisticsResponse: {
+        /** @description 학교별 매칭 현황 */
+        ProjectMatchingSchoolStatisticsResponse: {
             /**
              * Format: int64
              * @description 학교 ID
              */
             schoolId?: number;
+            /** @description 학교명 */
+            schoolName?: string;
             /**
              * Format: int64
-             * @description 매칭 완료 인원 수
+             * @description 누적 매칭 완료 인원 수
              */
             matchedMemberCount?: number;
             /**
              * Format: int64
-             * @description 학교별 지원 가능 총원
+             * @description 매칭 대상 총원. 차수가 지나도 차감하지 않습니다.
              */
             totalMemberCount?: number;
-            /**
-             * Format: int64
-             * @description 매칭 차수 중 한 번이라도 지원한 인원 수
-             */
-            appliedMemberCount?: number;
         };
-        /** @description 지부별 공개 프로젝트 매칭 요약 응답 */
-        ChapterProjectMatchingStatisticsResponse: {
+        /** @description 지부별 공개 프로젝트 매칭 통계 응답 */
+        ProjectMatchingStatisticsResponse: {
             /**
              * Format: int64
              * @description 지부 ID
              */
             chapterId?: number;
-            /** @description 매칭 차수별 ProjectMember 기준 매칭 현황 */
-            roundMatchingStatistics?: components["schemas"]["RoundMatchingStatisticsResponse"][];
-            /** @description 학교별 매칭 인원 수와 총원 */
-            schoolMatchingStatistics?: components["schemas"]["SchoolMatchingStatisticsResponse"][];
-            unclassifiedMatchingStatistics?: components["schemas"]["UnclassifiedMatchingStatisticsResponse"];
+            /** @description 차수별 매칭 현황 */
+            roundMatchingStatistics?: components["schemas"]["ProjectMatchingPhaseStatisticsResponse"][];
+            /** @description 학교별 누적 매칭 인원과 매칭 대상 총원 */
+            schoolMatchingStatistics?: components["schemas"]["ProjectMatchingSchoolStatisticsResponse"][];
+            /** @description 프로젝트별 매칭 현황 */
+            projectMatchingStatistics?: components["schemas"]["ProjectMatchingProjectStatisticsResponse"][];
         };
-        /** @description 프로젝트별 매칭 완료 인원 수 */
-        ProjectMatchingCountResponse: {
+        /** @description 팀원 정보 */
+        ProjectMatchingOverviewMemberResponse: {
+            /**
+             * Format: int64
+             * @description 회원 ID
+             */
+            memberId?: number;
+            /** @description 닉네임 */
+            nickname?: string;
+            /** @description 이름 */
+            name?: string;
+            /** @description 학교명 */
+            schoolName?: string;
+            matchedRoundInfo?: components["schemas"]["ProjectMatchingOverviewRoundResponse"];
+        };
+        /** @description PM 정보 */
+        ProjectMatchingOverviewOwnerResponse: {
+            /**
+             * Format: int64
+             * @description 회원 ID
+             */
+            memberId?: number;
+            /** @description 닉네임 */
+            nickname?: string;
+            /** @description 이름 */
+            name?: string;
+            /** @description 학교명 */
+            schoolName?: string;
+        };
+        /** @description 파트별 팀원과 모집 정원 */
+        ProjectMatchingOverviewPartResponse: {
+            /**
+             * @description 파트
+             * @enum {string}
+             */
+            part?: "PLAN" | "DESIGN" | "WEB" | "ANDROID" | "IOS" | "NODEJS" | "SPRINGBOOT" | "ADMIN" | "WEB_PRODUCT_ENGINEER" | "MOBILE_PRODUCT_ENGINEER";
+            /**
+             * Format: int64
+             * @description 팀원 수
+             */
+            currentMemberCount?: number;
+            /**
+             * Format: int64
+             * @description 모집 정원(TO)
+             */
+            quota?: number;
+            /**
+             * @description 모집 상태. 팀원 수가 정원보다 적으면 RECRUITING입니다.
+             * @enum {string}
+             */
+            status?: "RECRUITING" | "COMPLETED";
+            /** @description 팀원 목록. 팀원이 없으면 빈 배열입니다. */
+            members?: components["schemas"]["ProjectMatchingOverviewMemberResponse"][];
+        };
+        /** @description 프로젝트별 매칭 현황 */
+        ProjectMatchingOverviewProjectResponse: {
             /**
              * Format: int64
              * @description 프로젝트 ID
              */
             projectId?: number;
+            /** @description 프로젝트명 */
+            projectName?: string;
             /**
              * Format: int64
-             * @description 매칭 완료 인원 수
+             * @description 디자인·개발 팀원 수 합계
              */
-            matchedMemberCount?: number;
+            currentMemberCount?: number;
+            /**
+             * Format: int64
+             * @description 디자인·개발 모집 정원(TO) 합계
+             */
+            quota?: number;
+            /**
+             * @description 모집 상태. 정원이 남은 파트가 있으면 RECRUITING이며, 디자인·개발 TO가 없으면 null입니다.
+             * @enum {string}
+             */
+            partQuotaStatus?: "RECRUITING" | "COMPLETED";
+            productOwner?: components["schemas"]["ProjectMatchingOverviewOwnerResponse"];
+            /** @description 보조 PM 목록 */
+            coProductOwners?: components["schemas"]["ProjectMatchingOverviewOwnerResponse"][];
+            /** @description 파트별 팀원과 모집 정원 */
+            parts?: components["schemas"]["ProjectMatchingOverviewPartResponse"][];
         };
-        /** @description 매칭 차수별 ProjectMember 기준 매칭 현황 */
-        RoundMatchingStatisticsResponse: {
+        /** @description 지부별 프로젝트 매칭 현황 응답 */
+        ProjectMatchingOverviewResponse: {
+            /** @description 프로젝트별 매칭 현황 */
+            projects?: components["schemas"]["ProjectMatchingOverviewProjectResponse"][];
+        };
+        /** @description 배정된 매칭 차수 */
+        ProjectMatchingOverviewRoundResponse: {
+            /**
+             * Format: int64
+             * @description 매칭 차수 ID
+             */
+            matchingRoundId?: number;
+            /**
+             * @description 매칭 유형
+             * @enum {string}
+             */
+            type?: "PLAN_DESIGN" | "PLAN_DEVELOPER";
+            /**
+             * @description 매칭 차수
+             * @enum {string}
+             */
+            phase?: "FIRST" | "SECOND" | "THIRD" | "RANDOM_MATCHING";
+        };
+        /** @description 차수별 지원 인원 수 */
+        ProjectApplicationPhaseCountResponse: {
+            /**
+             * @description 매칭 차수
+             * @enum {string}
+             */
+            phase?: "FIRST" | "SECOND" | "THIRD" | "RANDOM_MATCHING";
+            /**
+             * Format: int64
+             * @description 지원 인원 수
+             */
+            applicantCount?: number;
+        };
+        /** @description 프로젝트별 지원 현황 */
+        ProjectApplicationProjectStatisticsResponse: {
+            /**
+             * Format: int64
+             * @description 프로젝트 ID
+             */
+            projectId?: number;
+            /** @description 프로젝트명 */
+            projectName?: string;
+            /** @description 차수별 지원 인원 수 */
+            rounds?: components["schemas"]["ProjectApplicationPhaseCountResponse"][];
+        };
+        /** @description 학교별 지원 현황 */
+        ProjectApplicationSchoolStatisticsResponse: {
+            /**
+             * Format: int64
+             * @description 학교 ID
+             */
+            schoolId?: number;
+            /** @description 학교명 */
+            schoolName?: string;
+            /**
+             * Format: int64
+             * @description 지원 가능 총원. 차수가 지나도 차감하지 않습니다.
+             */
+            totalMemberCount?: number;
+            /** @description 차수별 지원 인원 수 */
+            rounds?: components["schemas"]["ProjectApplicationPhaseCountResponse"][];
+        };
+        /** @description 프로젝트 지원 통계 응답 */
+        ProjectApplicationStatisticsResponse: {
+            /**
+             * Format: int64
+             * @description 지부 ID
+             */
+            chapterId?: number;
             matchingRound?: components["schemas"]["ProjectMatchingRoundStatisticsResponse"];
-            /**
-             * Format: int64
-             * @description 매칭 완료 인원 수
-             */
-            matchedMemberCount?: number;
-            /**
-             * Format: int64
-             * @description 지원 가능 인원 수
-             */
-            availableMemberCount?: number;
-            /** @description 프로젝트별 매칭 완료 인원 수 */
-            projects?: components["schemas"]["ProjectMatchingCountResponse"][];
+            summary?: components["schemas"]["ProjectApplicationSummaryResponse"];
         };
-        /** @description 합격 지원서가 없어 매칭 차수에 귀속할 수 없는 ProjectMember 통계 */
-        UnclassifiedMatchingStatisticsResponse: {
-            /**
-             * Format: int64
-             * @description 매칭 차수 미분류 인원 수
-             */
-            matchedMemberCount?: number;
-            /** @description 프로젝트별 매칭 차수 미분류 인원 수 */
-            projects?: components["schemas"]["ProjectMatchingCountResponse"][];
+        /** @description 차수별·학교별·프로젝트별 지원 현황 */
+        ProjectApplicationSummaryResponse: {
+            /** @description 차수별 지원 현황 */
+            roundApplicationStatistics?: components["schemas"]["RoundApplicationStatisticsResponse"][];
+            /** @description 학교별 지원 가능 총원과 차수별 지원 인원 */
+            schoolApplicationStatistics?: components["schemas"]["ProjectApplicationSchoolStatisticsResponse"][];
+            /** @description 프로젝트별 차수별 지원 인원 */
+            projectRoundStatistics?: components["schemas"]["ProjectApplicationProjectStatisticsResponse"][];
         };
         ApplicationFormPermissionsResponse: {
             canRead?: components["schemas"]["ProjectPermissionCapabilityInfo"];
@@ -14153,34 +14545,6 @@ export interface components {
             difference?: number;
             /** @enum {string} */
             allocationStatus?: "BALANCED" | "EXCESS" | "SHORTAGE";
-        };
-        ProjectMatchingRoundResponse: {
-            /** Format: int64 */
-            id?: number;
-            name?: string;
-            description?: string;
-            /** @enum {string} */
-            type?: "PLAN_DESIGN" | "PLAN_DEVELOPER";
-            /** @enum {string} */
-            phase?: "FIRST" | "SECOND" | "THIRD" | "RANDOM_MATCHING";
-            /** Format: int64 */
-            chapterId?: number;
-            /** Format: date-time */
-            startsAt?: string;
-            /** Format: date-time */
-            endsAt?: string;
-            /** Format: date-time */
-            decisionDeadline?: string;
-            /** Format: date-time */
-            resultPublishAt?: string;
-            /** Format: date-time */
-            autoDecisionExecutedAt?: string;
-            /** Format: int64 */
-            autoDecisionExecutedMemberId?: number;
-            /** Format: date-time */
-            createdAt?: string;
-            /** Format: date-time */
-            updatedAt?: string;
         };
         PageResponsePostResponse: {
             content?: components["schemas"]["PostResponse"][];
@@ -14477,6 +14841,16 @@ export interface components {
             /** Format: int64 */
             totalCount?: number;
             page?: components["schemas"]["PageResponseSearchMemberItemResponse"];
+        };
+        BlockedMemberListResponse: {
+            members?: components["schemas"]["BlockedMemberResponse"][];
+        };
+        BlockedMemberResponse: {
+            /** Format: int64 */
+            memberId?: number;
+            name?: string;
+            /** Format: date-time */
+            blockedAt?: string;
         };
         /** @description 기수 목록 페이징 응답 */
         GisuPageResponse: {
@@ -14877,6 +15251,11 @@ export interface components {
             isJoined?: boolean;
             /** @enum {string} */
             myRole?: "OWNER" | "ADMIN" | "MEMBER";
+            /**
+             * @description 요청자의 멤버십 상태. 참여한 적 없는 스레드는 null. ACTIVE: 참여 중, LEFT: 나감, KICKED: 강퇴됐지만 아직 확인 전(목록에 비활성으로 노출됨), KICKED_ACKNOWLEDGED: 강퇴를 확인함(이 상태가 되면 목록 조회에서 아예 제외됨)
+             * @enum {string}
+             */
+            membershipState?: "ACTIVE" | "LEFT" | "KICKED" | "KICKED_ACKNOWLEDGED";
             lastMessage?: components["schemas"]["CommunityThreadLastMessageResponse"];
             createdBy?: string;
             /** Format: date-time */
@@ -14896,7 +15275,7 @@ export interface components {
             senderName?: string;
             content?: string;
             /** @enum {string} */
-            type?: "TEXT" | "IMAGE" | "SYSTEM";
+            type?: "TEXT" | "IMAGE" | "SYSTEM" | "MEMBER_LEFT" | "MEMBER_KICKED";
             /** @enum {string} */
             status?: "SENT";
             files?: components["schemas"]["File"][];
@@ -14909,6 +15288,8 @@ export interface components {
             editedAt?: string;
             /** Format: date-time */
             deletedAt?: string;
+            /** @description 발신자가 조회자(또는 수신자) 기준으로 차단된 회원인지 여부. true면 클라이언트가 자체적으로 숨김/블러 등을 처리해야 한다. 서버는 메시지 내용을 지우지 않는다. */
+            isSenderBlocked?: boolean;
         };
         File: {
             fileId?: string;
@@ -15213,9 +15594,9 @@ export interface components {
             totalElements?: number;
             /** Format: int32 */
             totalPages?: number;
-            pageable?: components["schemas"]["PageableObject"];
             /** Format: int32 */
             numberOfElements?: number;
+            pageable?: components["schemas"]["PageableObject"];
             /** Format: int32 */
             size?: number;
             content?: components["schemas"]["AuditLogInfo"][];
@@ -15227,12 +15608,12 @@ export interface components {
             empty?: boolean;
         };
         PageableObject: {
+            unpaged?: boolean;
             /** Format: int32 */
             pageNumber?: number;
             paged?: boolean;
             /** Format: int32 */
             pageSize?: number;
-            unpaged?: boolean;
             /** Format: int64 */
             offset?: number;
             sort?: components["schemas"]["SortObject"];
@@ -16112,6 +16493,54 @@ export interface operations {
                 content: {
                     "*/*": components["schemas"]["UpsertApplicationFormResponse"];
                 };
+            };
+        };
+    };
+    "PROJECT-MATCHING-104": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chapterId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveProjectMatchingRoundsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProjectMatchingRoundResponse"][];
+                };
+            };
+        };
+    };
+    "PROJECT-MATCHING-105": {
+        parameters: {
+            query: {
+                type: "PLAN_DESIGN" | "PLAN_DEVELOPER";
+            };
+            header?: never;
+            path: {
+                chapterId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -18484,6 +18913,7 @@ export interface operations {
         parameters: {
             query?: {
                 chapterId?: number;
+                type?: "PLAN_DESIGN" | "PLAN_DEVELOPER";
                 time?: string;
             };
             header?: never;
@@ -19190,6 +19620,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RegisterResponse"];
+                };
+            };
+        };
+    };
+    "MEMBER-BLOCK-001": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MemberBlockResponse"];
+                };
+            };
+        };
+    };
+    "MEMBER-BLOCK-002": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                memberId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MemberBlockResponse"];
                 };
             };
         };
@@ -20012,6 +20486,28 @@ export interface operations {
         };
     };
     "COMMUNITY-THREAD-010": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                threadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["CommunityThreadMemberMutationResponse"];
+                };
+            };
+        };
+    };
+    "COMMUNITY-THREAD-012": {
         parameters: {
             query?: never;
             header?: never;
@@ -24708,6 +25204,54 @@ export interface operations {
             };
         };
     };
+    "PROJECT-STAT-003": {
+        parameters: {
+            query: {
+                /** @description 지부 ID */
+                chapterId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProjectMatchingStatisticsResponse"];
+                };
+            };
+        };
+    };
+    "PROJECT-STAT-004": {
+        parameters: {
+            query: {
+                /** @description 지부 ID */
+                chapterId: number;
+                /** @description 명단 기준. PUBLISHED(기본값) 또는 ADJUSTMENT */
+                view?: "PUBLISHED" | "ADJUSTMENT";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ProjectMatchingOverviewResponse"];
+                };
+            };
+        };
+    };
     "PROJECT-STAT-002": {
         parameters: {
             query?: {
@@ -24728,30 +25272,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ChapterProjectStatisticsResponse"];
-                };
-            };
-        };
-    };
-    "PROJECT-STAT-003": {
-        parameters: {
-            query: {
-                /** @description 지부 ID */
-                chapterId: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "*/*": components["schemas"]["ChapterProjectMatchingStatisticsResponse"];
+                    "*/*": components["schemas"]["ProjectApplicationStatisticsResponse"];
                 };
             };
         };
@@ -24807,6 +25328,7 @@ export interface operations {
             query: {
                 gisuId: number;
                 keyword?: string;
+                chapterId?: number;
                 /** @description Zero-based page index (0..N) */
                 page?: number;
                 /** @description The size of the page to be returned */
@@ -25334,6 +25856,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MemberInfoResponse"];
+                };
+            };
+        };
+    };
+    "MEMBER-BLOCK-003": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["BlockedMemberListResponse"];
                 };
             };
         };

@@ -1,62 +1,50 @@
-import type { ProjectsResponse } from '@/entities/project';
-
-import type { ProjectMembers } from '../hooks/useProjectsMembers';
+import type { MatchingOverviewResponse } from '../api/getMatchingOverview';
 import { toMatchingResults } from './toMatchingResults';
 
-type ProjectSummary = NonNullable<ProjectsResponse['content']>[number];
+type OverviewProject = NonNullable<MatchingOverviewResponse['projects']>[number];
 
 // 서버는 ID · 인원 수를 문자열로 줌
 const projects = [
   {
-    id: '3',
-    name: 'UMC Web',
+    projectId: '3',
+    projectName: 'UMC Web',
     productOwner: { nickname: '벨라', name: '황지원', schoolName: '중앙대' },
     partQuotaStatus: 'RECRUITING',
-    partQuotas: [
-      { part: 'PLAN', quota: '1' },
-      { part: 'DESIGN', quota: '2' },
-      { part: 'WEB_PRODUCT_ENGINEER', quota: '4' },
+    parts: [
+      { part: 'PLAN', quota: '1', members: [] },
+      {
+        part: 'DESIGN',
+        quota: '2',
+        members: [
+          {
+            memberId: '501',
+            nickname: '로미',
+            name: '신지혜',
+            schoolName: '한국대',
+            matchedRoundInfo: { phase: 'SECOND' },
+          },
+          // 지원 없이 수동 배정 (매칭 차수 없음)
+          { memberId: '502', nickname: '하늘', name: '박경운', schoolName: '중앙대' },
+        ],
+      },
+      { part: 'WEB_PRODUCT_ENGINEER', quota: '4', members: [] },
     ],
   },
   {
-    id: '4',
-    name: '모아모아',
+    projectId: '4',
+    projectName: '모아모아',
     productOwner: { nickname: '이방토', name: '이예원', schoolName: '한양대 ERICA' },
     partQuotaStatus: 'COMPLETED',
-    partQuotas: [
-      { part: 'DESIGN', quota: '1' },
-      { part: 'MOBILE_PRODUCT_ENGINEER', quota: '3' },
+    parts: [
+      { part: 'DESIGN', quota: '1', members: [] },
+      { part: 'MOBILE_PRODUCT_ENGINEER', quota: '3', members: [] },
     ],
   },
-] as unknown as ProjectSummary[];
-
-const members = new Map([
-  [
-    3,
-    {
-      partGroups: [
-        {
-          part: 'DESIGN',
-          members: [
-            {
-              memberId: '501',
-              nickname: '로미',
-              name: '신지혜',
-              schoolName: '한국대',
-              matchedRoundInfo: { phase: 'SECOND' },
-            },
-            // 지원 없이 수동 배정 (매칭 차수 없음)
-            { memberId: '502', nickname: '하늘', name: '박경운', schoolName: '중앙대' },
-          ],
-        },
-      ],
-    } as unknown as ProjectMembers,
-  ],
-]);
+] as unknown as OverviewProject[];
 
 describe('toMatchingResults', () => {
   it('PE 플랫폼별로 나누고 파트 칸에 매칭된 챌린저를 채운다', () => {
-    const [web, mobile] = toMatchingResults(projects, members);
+    const [web, mobile] = toMatchingResults(projects);
 
     expect(web.platform).toBe('WEB');
     expect(web.projects).toEqual([

@@ -5,7 +5,6 @@ import { useChapters } from '@/entities/chapter';
 import { useSessionStore } from '@/entities/session';
 import {
   ChapterMatchingRateCard,
-  getTotalCapacity,
   MatchingResultSheet,
   type PartMatching,
   ProjectMatchingChart,
@@ -13,16 +12,13 @@ import {
   RoundMatchingCard,
   SchoolMatchingCard,
   toChapterMatchingRate,
-  toMatchingResults,
   toProjectMatchings,
   toRoundMatchings,
   toSchoolMatchings,
   useChapterMatchingStatistics,
-  useChapterProjects,
+  useMatchingOverview,
   useMatchingPermissions,
-  useProjectsMembers,
 } from '@/features/matching-status';
-import { toId } from '@/shared/api/toId';
 import { useAppToast } from '@/widgets/toast';
 
 import { getBreadcrumbs } from '../-shared/constants';
@@ -53,21 +49,14 @@ const MatchingStatusPage = () => {
       role === 'HQ_LEAD' ||
       (role === 'CHAPTER_ADMIN' && chapterId !== null && chapterId === ownChapterId));
 
-  // 01 매칭 통계: 통계에 없는 프로젝트 이름 · 정원은 지부 프로젝트 목록, 파트별 매칭 인원은 팀원 구성에서
+  // 01 매칭 통계: 공개된 결과 기준
   const statistics = useChapterMatchingStatistics(chapterId);
-  const chapterProjects = useChapterProjects(gisuId, chapterId);
-  const projects = chapterProjects.data ?? [];
-  const projectIds = projects.flatMap(({ id }) => {
-    const projectId = toId(id);
-    return projectId === null ? [] : [projectId];
-  });
-  const members = useProjectsMembers(projectIds);
-  const schools = chapters.find(({ id }) => id === chapterId)?.schools ?? [];
 
-  // 02 매칭 결과 시트: 통계와 같은 지부 프로젝트 + 팀원 구성
-  const results = chapterProjects.data
-    ? toMatchingResults(chapterProjects.data, members.data ?? new Map())
-    : [];
+  // 02 매칭 결과 시트: 수동 배정 · 해제를 하는 운영진은 최종 공개 전 조정 중인 명단(ADJUSTMENT)을 봄
+  // (ADJUSTMENT는 최고 관리자 · 총괄단 · 해당 지부장만 요청 가능해서 canManage와 같음)
+  const overview = useMatchingOverview(chapterId, canManage ? 'ADJUSTMENT' : 'PUBLISHED');
+  const results = overview.data ?? [];
+  const projectIds = results.flatMap(({ projects }) => projects.map(({ projectId }) => projectId));
 
   // 수동 배정 · 매칭 해제 서버 권한 (관리할 수 있는 역할일 때만 확인)
   const permissions = useMatchingPermissions(canManage ? projectIds : []);
@@ -79,9 +68,24 @@ const MatchingStatusPage = () => {
   const toast = useAppToast();
   const chapterName = chapters.find(({ id }) => id === chapterId)?.name ?? '';
 
+  // 권한을 확인하지 못한 경우(요청 실패 · 불러오는 중)와 권한이 없는 경우를 구분해서 알려 줌
   const handleEmptySlotClick = (project: ProjectMatchingResult, part: PartMatching) => {
-    if (permissions.data?.get(project.projectId)?.canAssign) setAssignTarget({ project, part });
-    else toast.show('이 프로젝트에는 팀원을 배정할 수 없어요.', { color: 'error' });
+    if (permissions.isError) {
+      toast.show('배정 권한을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.', { color: 'error' });
+      return;
+    }
+    if (!permissions.data) {
+      toast.show('배정 권한을 확인하고 있어요. 잠시 후 다시 눌러 주세요.', { color: 'error' });
+      return;
+    }
+    const permission = permissions.data.get(project.projectId);
+    if (permission?.canAssign) {
+      setAssignTarget({ project, part });
+      return;
+    }
+    toast.show(permission?.assignDeniedReason ?? '이 프로젝트에는 팀원을 배정할 수 없어요.', {
+      color: 'error',
+    });
   };
 
   const handleReleased = () => {
@@ -117,29 +121,21 @@ const MatchingStatusPage = () => {
               }
             />
             {/* TODO: 불러오기 실패 화면이 피그마에 나오면 교체 */}
-            {(statistics.isError || chapterProjects.isError) && (
+            {statistics.isError && (
               <p role="alert" className="text-body-3-medium text-red-500">
                 매칭 통계를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
               </p>
             )}
             {/* 처음 불러오는 동안은 0명 · 빈 차트가 잠깐 보이지 않도록 그리지 않음 */}
-            {statistics.data && chapterProjects.data && (
+            {statistics.data && (
               <div className="flex w-full flex-col gap-4">
                 {/* 피그마 카드 폭 473 : 375 : 277.5 */}
                 <div className="grid w-full grid-cols-[473fr_375fr_277.5fr] gap-4">
-                  <ChapterMatchingRateCard
-                    {...toChapterMatchingRate(statistics.data, getTotalCapacity(projects))}
-                  />
+                  <ChapterMatchingRateCard {...toChapterMatchingRate(statistics.data)} />
                   <RoundMatchingCard rounds={toRoundMatchings(statistics.data)} />
-                  <SchoolMatchingCard schools={toSchoolMatchings(statistics.data, schools)} />
+                  <SchoolMatchingCard schools={toSchoolMatchings(statistics.data)} />
                 </div>
-                <ProjectMatchingChart
-                  projects={toProjectMatchings(
-                    statistics.data,
-                    projects,
-                    members.data ?? new Map(),
-                  )}
-                />
+                <ProjectMatchingChart projects={toProjectMatchings(statistics.data)} />
               </div>
             )}
           </section>
@@ -148,36 +144,39 @@ const MatchingStatusPage = () => {
             <SectionHeader
               number="02"
               title="매칭 결과 시트"
-              // 프로젝트 · 팀원 구성 중 더 늦게 불러온 시각 (불러오지 못했으면 마지막 요청 시각)
+              // 마지막으로 불러온 시각. 불러오지 못했을 때도 마지막 요청 시각을 보여 줌
               slot={
                 <UpdatedAtCaption
-                  updatedAt={Math.max(
-                    chapterProjects.dataUpdatedAt,
-                    chapterProjects.errorUpdatedAt,
-                    members.dataUpdatedAt,
-                    members.errorUpdatedAt,
-                  )}
+                  updatedAt={Math.max(overview.dataUpdatedAt, overview.errorUpdatedAt)}
                 />
               }
             />
             {/* TODO: 불러오기 실패 화면이 피그마에 나오면 교체 */}
-            {(chapterProjects.isError || members.isError) && (
+            {overview.isError && (
               <p role="alert" className="text-body-3-medium text-red-500">
                 매칭 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
               </p>
             )}
             <div className="flex w-full flex-col gap-4">
               {results.map((platformResults) => (
-                <MatchingResultSheet
+                // 반응형 없음: 시트는 피그마 폭(1158) 그대로 두고, 화면에 보이는 폭(좌우 여백 32씩 제외)보다 넓으면 가로 스크롤
+                <div
                   key={platformResults.platform}
-                  {...platformResults}
-                  onMemberClick={
-                    canManage
-                      ? (project, part, member) => setApplicationTarget({ project, part, member })
-                      : undefined
-                  }
-                  onEmptySlotClick={canManage ? handleEmptySlotClick : undefined}
-                />
+                  className="w-full max-w-[calc(100cqw-64px)] overflow-x-auto"
+                >
+                  <div className="min-w-[1158px]">
+                    <MatchingResultSheet
+                      {...platformResults}
+                      onMemberClick={
+                        canManage
+                          ? (project, part, member) =>
+                              setApplicationTarget({ project, part, member })
+                          : undefined
+                      }
+                      onEmptySlotClick={canManage ? handleEmptySlotClick : undefined}
+                    />
+                  </div>
+                </div>
               ))}
             </div>
           </section>

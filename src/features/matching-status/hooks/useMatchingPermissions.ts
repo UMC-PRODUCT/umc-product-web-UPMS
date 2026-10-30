@@ -6,6 +6,7 @@ import { toId } from '@/shared/api/toId';
 export type MatchingPermission = {
   canAssign: boolean; // 빈 칸 수동 배정
   canUnassign: boolean; // 매칭 해제
+  assignDeniedReason: string | null; // 배정할 수 없을 때 서버가 알려 준 이유
 };
 
 // 프로젝트별 수동 배정 · 매칭 해제 권한 (서버 권한 기준. 권한이 없어도 false로 옴)
@@ -23,6 +24,7 @@ export const useMatchingPermissions = (projectIds: number[]) =>
         result.set(id, {
           canAssign: member?.canAssign?.allowed === true,
           canUnassign: member?.canUnassign?.allowed === true,
+          assignDeniedReason: member?.canAssign?.reason || null,
         });
       }
       return result;
