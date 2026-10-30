@@ -27,6 +27,8 @@ type ApplicationTableProps = {
   groups: ProjectApplicationGroup[]; // 현재 페이지 데이터 (피그마: 10개씩 페이지 구분)
   onProjectClick?: (group: ProjectApplicationGroup) => void; // 어드민: 프로젝트명 클릭
   onApplicantClick?: (group: ProjectApplicationGroup, applicant: Applicant) => void; // PM: 지원자 이름 클릭
+  className?: string; // 스크롤 영역 폭 (화면에 보이는 폭으로 줄일 때)
+  contentClassName?: string; // 표 자체의 최소 폭 (기본 860px, 이보다 좁으면 가로 스크롤)
 };
 
 // 지원 목록 공용 테이블: 프로젝트 줄 + (더블 PM 줄) + 지원자 줄들, 권한별로 보이는 내용이 다름
@@ -35,14 +37,16 @@ const ApplicationTable = ({
   groups,
   onProjectClick,
   onApplicantClick,
+  className = '',
+  contentClassName = TABLE_MIN_WIDTH_CLASS,
 }: ApplicationTableProps) => {
   const { projectLinkable, expandable } = VIEW_OPTIONS[view];
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
   return (
     // 열은 화면 폭에 맞춰 줄어들고, 최소 폭보다 좁으면 헤더 · 행이 같이 가로로 스크롤됨
-    <div className="w-full overflow-x-auto">
-      <div className={`flex w-full flex-col ${TABLE_MIN_WIDTH_CLASS}`}>
+    <div className={`w-full overflow-x-auto ${className}`}>
+      <div className={`flex w-full flex-col ${contentClassName}`}>
         <ApplicationTableHead />
         <ul className="flex w-full flex-col overflow-hidden rounded-b-xl border-x border-b border-teal-grey-100 pt-1">
           {groups.length === 0 && (

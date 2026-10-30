@@ -188,6 +188,9 @@ const PmApplications = () => {
                   {/* 지원 마감 전 차수의 지원자 실시간 노출은 담당 PM · 보조 PM만 (서버 규칙) */}
                   <ApplicationTable
                     view="PM_CHALLENGER"
+                    // 반응형 없음: 표는 피그마 폭(1028) 그대로 두고, 화면에 보이는 폭(페이지 32 + 카드 24 여백씩 제외)보다 넓으면 가로 스크롤
+                    className="max-w-[calc(100cqw-112px)]"
+                    contentClassName="min-w-[1028px]"
                     groups={[
                       {
                         project,
