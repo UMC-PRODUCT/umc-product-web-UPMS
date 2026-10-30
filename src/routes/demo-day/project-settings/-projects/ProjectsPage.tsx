@@ -94,17 +94,18 @@ const getProjectDetailActions = (
     </Button>
   );
 
-  // 지원 기간: 모든 역할·지부에 관계없이 기획 보기 + 모집 문항 보기
+  // 지원기간: PM 챌린저 + 어드민 모두 모집 문항 보기
   if (isApplicationPeriod) {
     return (
       <>
+        {usersButton}
         {planButton}
         {recruitButton}
       </>
     );
   }
 
-  // PM 챌린저 - 자신의 프로젝트만 조회하므로 기획 보기 + 프로젝트 수정하기
+  // PM 챌린저: 지원기간 전 / 매칭기간 모두 프로젝트 수정하기
   if (view === 'PM_CHALLENGER') {
     return (
       <>
@@ -115,31 +116,10 @@ const getProjectDetailActions = (
     );
   }
 
-  // 매칭 기간 (어드민): 기획 보기 + 모집 문항 보기(비활성화)
+  // 매칭기간 (어드민): 모집 문항 보기 비활성화
   if (isMatchingPeriod) {
     return (
       <>
-        {planButton}
-        {recruitButtonDisabled}
-      </>
-    );
-  }
-
-  // 기본 - SUPER_ADMIN, HQ_LEAD(총괄/부총괄), CHAPTER_ADMIN(지부장)
-  if (role === 'SUPER_ADMIN' || role === 'HQ_LEAD' || role === 'CHAPTER_ADMIN') {
-    return (
-      <>
-        {usersButton}
-        {planButton}
-        {editButton}
-      </>
-    );
-  }
-
-  // HQ_ADMIN - 조회만 가능
-  if (role === 'HQ_ADMIN') {
-    return (
-      <>
         {usersButton}
         {planButton}
         {recruitButtonDisabled}
@@ -147,7 +127,25 @@ const getProjectDetailActions = (
     );
   }
 
-  return planButton;
+  // 지원기간 전 - 타 지부장(CHAPTER_ADMIN): 모집 문항 보기
+  if (role === 'CHAPTER_ADMIN') {
+    return (
+      <>
+        {usersButton}
+        {planButton}
+        {recruitButton}
+      </>
+    );
+  }
+
+  // 지원기간 전 - SUPER_ADMIN, HQ_LEAD, HQ_ADMIN: 프로젝트 수정하기
+  return (
+    <>
+      {usersButton}
+      {planButton}
+      {editButton}
+    </>
+  );
 };
 
 // 프로젝트 관리 워딩 반환 함수
