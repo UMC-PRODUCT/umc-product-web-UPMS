@@ -7,6 +7,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 import { useChapters } from '@/entities/chapter';
 import { getApplicationsView, type Role, useSessionStore, type View } from '@/entities/session';
+import { useProjectDetail } from '@/features/applications';
 import {
   getCurrentMatchingStep,
   toScheduleByTrack,
@@ -43,6 +44,8 @@ const getProjectDetailActions = (
   view: View,
   isApplicationPeriod: boolean,
   isMatchingPeriod: boolean,
+  planUrl: string | null,
+  onEditProject: () => void,
 ): ReactNode => {
   const usersButton = (
     <Button
@@ -55,7 +58,13 @@ const getProjectDetailActions = (
   );
 
   const planButton = (
-    <Button variant="weak" size="md" className="flex-1">
+    <Button
+      variant="weak"
+      size="md"
+      className="flex-1"
+      disabled={!planUrl}
+      onClick={() => planUrl && window.open(planUrl, '_blank')}
+    >
       기획 보기
     </Button>
   );
@@ -69,6 +78,12 @@ const getProjectDetailActions = (
   const recruitButtonDisabled = (
     <Button size="md" className="flex-1" disabled>
       모집 문항 보기
+    </Button>
+  );
+
+  const editButton = (
+    <Button size="md" className="flex-1" onClick={onEditProject}>
+      프로젝트 수정하기
     </Button>
   );
 
@@ -88,9 +103,7 @@ const getProjectDetailActions = (
       <>
         {usersButton}
         {planButton}
-        <Button size="md" className="flex-1">
-          프로젝트 수정하기
-        </Button>
+        {editButton}
       </>
     );
   }
@@ -111,9 +124,7 @@ const getProjectDetailActions = (
       <>
         {usersButton}
         {planButton}
-        <Button size="md" className="flex-1">
-          프로젝트 수정하기
-        </Button>
+        {editButton}
       </>
     );
   }
@@ -207,6 +218,11 @@ const ProjectsPage = () => {
   const resolvedView = getApplicationsView(role, view);
   const isPmChallenger = resolvedView === 'PM_CHALLENGER';
   const navigate = useNavigate();
+
+  const { data: selectedProjectDetail } = useProjectDetail(
+    selectedProject ? Number(selectedProject.projectId) : null,
+  );
+  const planUrl = selectedProjectDetail?.planUrl ?? null;
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     ...managedProjectsInfiniteQueryOptions({
@@ -427,6 +443,12 @@ const ProjectsPage = () => {
                     resolvedView,
                     isApplicationPeriod,
                     isMatchingPeriod,
+                    planUrl,
+                    () =>
+                      navigate({
+                        to: '/demo-day/project-settings/projects/$projectId',
+                        params: { projectId: selectedProject.projectId },
+                      }),
                   )}
                 />
               </div>
