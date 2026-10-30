@@ -3,7 +3,7 @@ import { PartTag, Tag } from '@umc-product/react';
 
 import type { ProjectApplicationRow, RecruitStatus } from '../../model/types';
 import openNewIcon from './assets/open-new.svg';
-import { COLUMN_CLASS, RECRUIT_COLUMNS } from './columns';
+import { COLUMN_CLASS, RECRUIT_COLUMNS, RECRUIT_GROUP_CLASS } from './columns';
 import RecruitCounter from './RecruitCounter';
 
 const RECRUIT_STATUS_TAG: Record<RecruitStatus, { label: string; color: 'brand' | 'neutral' }> = {
@@ -47,7 +47,7 @@ const ApplicationTableRow = ({
         onToggle ? 'cursor-pointer' : ''
       } ${selected ? ROW_STATE_CLASS.selected : ROW_STATE_CLASS.default}`}
     >
-      <div className="flex items-center">
+      <div className="flex min-w-0 flex-1 items-center">
         <div className={COLUMN_CLASS.project}>
           {projectLinkable ? (
             <button
@@ -83,7 +83,7 @@ const ApplicationTableRow = ({
             {statusTag.label}
           </Tag>
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className={RECRUIT_GROUP_CLASS}>
           {RECRUIT_COLUMNS.map(({ part: recruitPart, width }) => (
             <div key={recruitPart} className={`flex h-[50px] justify-center ${width}`}>
               <div className="flex items-center">
@@ -93,7 +93,7 @@ const ApplicationTableRow = ({
           ))}
         </div>
       </div>
-      {/* TODO: 펼쳤을 때 보여줄 내용 기획 확인 후 연동 */}
+      {/* 펼치면 보조 PM · 지원자 줄이 프로젝트 줄 아래에 보임 */}
       <button
         type="button"
         aria-label={`${projectName} ${selected ? '접기' : '펼치기'}`}

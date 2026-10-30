@@ -1,3 +1,9 @@
+export { useApplicationProjects } from './hooks/useApplicationProjects';
+export { useDecisionPermissions } from './hooks/useDecisionPermissions';
+export { useProjectApplicants } from './hooks/useProjectApplicants';
+export { useProjectsApplicants } from './hooks/useProjectsApplicants';
+export { useProjectsCoPms } from './hooks/useProjectsCoPms';
+export { useUpdateApplicantStatus } from './hooks/useUpdateApplicantStatus';
 export {
   APPLICANT_ROUND_OPTIONS,
   APPLICANT_STATUS_OPTIONS,
@@ -7,11 +13,9 @@ export {
 } from './model/applicantFilters';
 export { APPLICANT_STATUS_TAG, APPLICANT_STATUSES } from './model/applicantStatus';
 export { APPLICATION_FILTERS, INITIAL_APPLICATION_FILTERS } from './model/filterOptions';
-export { isMatchingRoundOpen } from './model/matchingRound';
-export {
-  MOCK_MY_PROJECT_APPLICATION_GROUP,
-  MOCK_PROJECT_APPLICATION_GROUPS,
-} from './model/mockApplicants';
+export { filterPmApplicants, getApplicantSchoolOptions } from './model/filterPmApplicants';
+export { toProjectApplicationRow } from './model/toProjectApplicationRow';
+export { toProjectsQuery } from './model/toProjectsQuery';
 export type {
   Applicant,
   ApplicantStatus,

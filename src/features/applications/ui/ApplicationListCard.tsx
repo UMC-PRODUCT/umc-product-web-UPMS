@@ -4,7 +4,7 @@ import { Button } from '@umc-product/react';
 
 import documentGraphic from './assets/document.svg';
 
-// TODO: 지원 목록 API가 나오면 목록 렌더링 추가. 지금은 빈 상태만 있음.
+// 내 지원 현황 빈 상태 (지원한 프로젝트가 없을 때) + 프로젝트 목록으로 이동
 const ApplicationListCard = () => {
   const navigate = useNavigate();
 

@@ -1,6 +1,5 @@
 import { PartTag, type PartTagPart } from '@umc-product/react';
 
-import { isMatchingRoundOpen } from '../../model/matchingRound';
 import type { Applicant, ApplicantStatus, PartRecruitment, RecruitPart } from '../../model/types';
 import ApplicantDetailRow from './ApplicantDetailRow';
 
@@ -17,8 +16,10 @@ type PartApplicantListProps = {
   recruitment: PartRecruitment;
   applicants: Applicant[]; // 이 파트 전체 지원자 (차수별 인원 계산용)
   visibleApplicants: Applicant[]; // 필터를 적용한 지원자
-  // 없으면 배정 상태를 바꿀 수 없음 (조회만 가능한 역할). 매칭이 끝난 차수의 지원자도 바꿀 수 없음
-  onStatusChange?: (applicantId: string, status: ApplicantStatus) => void;
+  // 없으면 배정 상태를 바꿀 수 없음 (조회만 가능한 역할)
+  onStatusChange?: (applicant: Applicant, status: ApplicantStatus) => void;
+  // 이 지원자의 배정 상태를 지금 바꿀 수 있는지 (서버 권한 + 그 차수의 결정 기간)
+  canChangeStatus?: (applicant: Applicant) => boolean;
   onApplicantClick?: (applicant: Applicant) => void;
 };
 
@@ -29,6 +30,7 @@ const PartApplicantList = ({
   applicants,
   visibleApplicants,
   onStatusChange,
+  canChangeStatus = () => false,
   onApplicantClick,
 }: PartApplicantListProps) => (
   <section className="flex w-full flex-col gap-2">
@@ -66,8 +68,8 @@ const PartApplicantList = ({
             key={applicant.applicantId}
             applicant={applicant}
             onStatusChange={
-              onStatusChange && isMatchingRoundOpen(applicant.round)
-                ? (status) => onStatusChange(applicant.applicantId, status)
+              onStatusChange && canChangeStatus(applicant)
+                ? (status) => onStatusChange(applicant, status)
                 : undefined
             }
             onApplicantClick={onApplicantClick && (() => onApplicantClick(applicant))}

@@ -19,7 +19,7 @@ export const APPLICANT_STATUS_OPTIONS: OptionItem<ApplicantStatusFilter>[] = [
   { value: 'WAITING', label: '대기' },
 ];
 
-// TODO: API 연동 시 서버 필터로 교체
+// 프로젝트 상세 모달의 차수 · 지원 상태 필터 (프로젝트 하나 분량이라 받은 지원자를 화면에서 거름)
 export const filterApplicants = (
   applicants: Applicant[],
   round: ApplicantRoundFilter,

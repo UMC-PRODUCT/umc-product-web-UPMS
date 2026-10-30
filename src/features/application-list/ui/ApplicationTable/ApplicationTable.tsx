@@ -6,6 +6,7 @@ import type { Applicant, ProjectApplicationGroup } from '../../model/types';
 import ApplicantRow from './ApplicantRow';
 import ApplicationTableHead from './ApplicationTableHead';
 import ApplicationTableRow from './ApplicationTableRow';
+import { TABLE_MIN_WIDTH_CLASS } from './columns';
 import CoPmRow from './CoPmRow';
 
 export type ApplicationTableView = Exclude<View, 'CHALLENGER'>;
@@ -36,63 +37,66 @@ const ApplicationTable = ({
   onApplicantClick,
 }: ApplicationTableProps) => {
   const { projectLinkable, expandable } = VIEW_OPTIONS[view];
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
   return (
-    <div className="flex w-full flex-col">
-      <ApplicationTableHead />
-      <ul className="flex w-full flex-col overflow-hidden rounded-b-xl border-x border-b border-teal-grey-100 pt-1">
-        {groups.length === 0 && (
-          // 피그마: 목록 영역 높이 204px (위 여백 4px 포함)
-          <li className="flex h-[200px] items-center justify-center text-body-1-medium text-teal-grey-400">
-            등록된 프로젝트와 지원자가 없어요
-          </li>
-        )}
-        {groups.map((group) => {
-          const { project, coPms, applicants } = group;
-          const selected = expandable && selectedProjectId === project.projectId;
-          const showDetails = !expandable || selected;
+    // 열은 화면 폭에 맞춰 줄어들고, 최소 폭보다 좁으면 헤더 · 행이 같이 가로로 스크롤됨
+    <div className="w-full overflow-x-auto">
+      <div className={`flex w-full flex-col ${TABLE_MIN_WIDTH_CLASS}`}>
+        <ApplicationTableHead />
+        <ul className="flex w-full flex-col overflow-hidden rounded-b-xl border-x border-b border-teal-grey-100 pt-1">
+          {groups.length === 0 && (
+            // 피그마: 목록 영역 높이 204px (위 여백 4px 포함)
+            <li className="flex h-[200px] items-center justify-center text-body-1-medium text-teal-grey-400">
+              등록된 프로젝트와 지원자가 없어요
+            </li>
+          )}
+          {groups.map((group) => {
+            const { project, coPms, applicants } = group;
+            const selected = expandable && selectedProjectId === project.projectId;
+            const showDetails = !expandable || selected;
 
-          return (
-            <Fragment key={project.projectId}>
-              <ApplicationTableRow
-                {...project}
-                projectLinkable={projectLinkable}
-                onProjectClick={onProjectClick && (() => onProjectClick(group))}
-                selected={selected}
-                // TODO: PM 뷰 화살표 버튼 동작 기획 확인
-                onToggle={
-                  expandable
-                    ? () =>
-                        setSelectedProjectId((prev) =>
-                          prev === project.projectId ? null : project.projectId,
-                        )
-                    : undefined
-                }
-              />
-              {showDetails &&
-                coPms.map((coPm) => (
-                  <CoPmRow key={`${coPm.challengerName}-${coPm.schoolName}`} {...coPm} />
-                ))}
-              {showDetails &&
-                applicants.map((applicant) => (
-                  <ApplicantRow
-                    key={applicant.applicantId}
-                    {...applicant}
-                    onApplicantClick={
-                      onApplicantClick && (() => onApplicantClick(group, applicant))
-                    }
-                  />
-                ))}
-              {showDetails && applicants.length === 0 && (
-                <li className="flex h-[68px] items-center justify-center border-b-2 border-teal-grey-100 text-body-3-medium text-teal-grey-500">
-                  지원한 챌린저가 없어요
-                </li>
-              )}
-            </Fragment>
-          );
-        })}
-      </ul>
+            return (
+              <Fragment key={project.projectId}>
+                <ApplicationTableRow
+                  {...project}
+                  projectLinkable={projectLinkable}
+                  onProjectClick={onProjectClick && (() => onProjectClick(group))}
+                  selected={selected}
+                  // TODO: PM 뷰 화살표 버튼 동작 기획 확인
+                  onToggle={
+                    expandable
+                      ? () =>
+                          setSelectedProjectId((prev) =>
+                            prev === project.projectId ? null : project.projectId,
+                          )
+                      : undefined
+                  }
+                />
+                {showDetails &&
+                  coPms.map((coPm) => (
+                    <CoPmRow key={`${coPm.challengerName}-${coPm.schoolName}`} {...coPm} />
+                  ))}
+                {showDetails &&
+                  applicants.map((applicant) => (
+                    <ApplicantRow
+                      key={applicant.applicantId}
+                      {...applicant}
+                      onApplicantClick={
+                        onApplicantClick && (() => onApplicantClick(group, applicant))
+                      }
+                    />
+                  ))}
+                {showDetails && applicants.length === 0 && (
+                  <li className="flex h-[68px] items-center justify-center border-b-2 border-teal-grey-100 text-body-3-medium text-teal-grey-500">
+                    지원한 챌린저가 없어요
+                  </li>
+                )}
+              </Fragment>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 };

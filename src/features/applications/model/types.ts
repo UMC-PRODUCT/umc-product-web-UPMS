@@ -15,14 +15,14 @@ export type PartRecruitment = {
   status: RecruitStatus;
 };
 
+// 내 지원 목록의 카드 한 장 (지원서 1건). 소개 · 로고는 목록 API에 없어서 상세 모달에서 프로젝트 상세로 불러옴
 export type AppliedProject = {
-  projectId: string;
+  applicationId: number | null; // 랜덤 매칭으로 확정된 카드는 지원서가 없어서 null
+  projectId: number;
   projectName: string;
-  logoUrl: string | null; // 없으면 기본 로고
   thumbnailUrl: string | null; // 없으면 회색 칸
   pmName: string; // 닉네임/이름
   schoolName: string;
-  description: string; // 프로젝트 소개 (상세 모달에 표시)
   platform: ServicePlatform;
   recruitments: PartRecruitment[]; // 모집하는 파트만
   applicationEditable: boolean; // 지원 기간이면 true (지원 취소 · 수정 가능)
