@@ -182,7 +182,9 @@ const ProjectsPage = () => {
   const gisuId = useSessionStore((state) => state.session.gisuId);
   const { data: allChapters = [] } = useChapters(gisuId);
   const isChapterLeader = role === 'CHAPTER_ADMIN';
-  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(ownChapterId);
+  const [selectedChapterId, setSelectedChapterId] = useState<number | null>(
+    isChapterLeader ? ownChapterId : null,
+  );
   const chapterId = selectedChapterId ?? allChapters[0]?.id ?? null;
   const [selectedProject, setSelectedProject] = useState<ManagedProject | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ManagedProject | null>(null);

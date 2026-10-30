@@ -5,6 +5,7 @@ import { ContextSwitcher, SideNavigation, type SideNavigationGroup } from '@umc-
 import {
   getViewOptions,
   type ProjectSettingsAccess,
+  type Role,
   useProjectSettingsAccess,
   useSessionStore,
   type View,
@@ -20,12 +21,21 @@ const TEAM_MATCHING_GROUP: SideNavigationGroup = {
   children: TEAM_MATCHING_MENU,
 };
 
-const getProjectSettingsGroup = (access: ProjectSettingsAccess): SideNavigationGroup | null => {
+const SCHOOL_ROLES: Role[] = ['SCHOOL_ADMIN', 'SCHOOL_STAFF'];
+
+const getProjectSettingsGroup = (
+  access: ProjectSettingsAccess,
+  role: Role,
+): SideNavigationGroup | null => {
   if (access === 'NONE') return null;
+
+  const showProjectManagement = !SCHOOL_ROLES.includes(role);
 
   const basicChildren = [
     { label: '공지', href: '/demo-day/project-settings/notice' },
-    { label: '프로젝트 관리', href: '/demo-day/project-settings/projects' },
+    ...(showProjectManagement
+      ? [{ label: '프로젝트 관리', href: '/demo-day/project-settings/projects' }]
+      : []),
   ];
   const fullChildren = [
     { label: '매칭 차수 설정', href: '/demo-day/project-settings/rounds' },
@@ -48,7 +58,7 @@ const Sidebar = () => {
   const access = useProjectSettingsAccess();
 
   const viewOptions = getViewOptions(session);
-  const projectSettingsGroup = getProjectSettingsGroup(access);
+  const projectSettingsGroup = getProjectSettingsGroup(access, session.role);
   const items = projectSettingsGroup
     ? [projectSettingsGroup, TEAM_MATCHING_GROUP]
     : [TEAM_MATCHING_GROUP];
