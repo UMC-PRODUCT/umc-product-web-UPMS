@@ -93,6 +93,20 @@ const toTeamMembers = (
     ];
   });
 
+// 파트별 모집 현황에 팀원 구성을 합침. 목록 응답에는 팀원이 없어서 별도 조회 후 사용
+export const toTeamRecruitments = (
+  recruitments: Omit<PartRecruitment, 'members'>[],
+  membersResponse: ProjectMembersResponse | undefined,
+): PartRecruitment[] => {
+  const membersByPart = new Map(
+    (membersResponse?.partGroups ?? []).map(({ part, members }) => [part, toTeamMembers(members)]),
+  );
+  return recruitments.map((r) => {
+    const serverPart = RECRUIT_PARTS.find(([, part]) => part === r.part)?.[0];
+    return { ...r, members: membersByPart.get(serverPart) ?? [] };
+  });
+};
+
 // 목록 프로젝트에 상세(로고 · 기획 링크)와 팀원 구성을 덧붙임. 아직 못 받은 값은 그대로 둠
 export const applyProjectDetail = (
   project: Project,

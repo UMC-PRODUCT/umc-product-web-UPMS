@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { AddIcon, UsersPictogram, WarningTriangleIcon } from '@umc-product/icons';
 import { Button, Dialog, Dimmed, PageHeader, SegmentedControl } from '@umc-product/react';
@@ -13,6 +13,11 @@ import {
   toScheduleByTrack,
   useMatchingRounds,
 } from '@/features/matching-schedule';
+import {
+  getProjectMembers,
+  TeamCompositionPanel,
+  toTeamRecruitments,
+} from '@/features/project-list';
 import {
   type ManagedProject,
   ProjectManagementCard,
@@ -46,6 +51,7 @@ const getProjectDetailActions = (
   isMatchingPeriod: boolean,
   planUrl: string | null,
   onEditProject: () => void,
+  onTeamClick: () => void,
 ): ReactNode => {
   const usersButton = (
     <Button
@@ -54,6 +60,7 @@ const getProjectDetailActions = (
       size="md"
       icon={<UsersPictogram size={30} color="var(--color-icon-subtle)" />}
       aria-label="팀원 현황"
+      onClick={onTeamClick}
     />
   );
 
@@ -219,10 +226,20 @@ const ProjectsPage = () => {
   const isPmChallenger = resolvedView === 'PM_CHALLENGER';
   const navigate = useNavigate();
 
+  const [teamPanelOpen, setTeamPanelOpen] = useState(false);
+
   const { data: selectedProjectDetail } = useProjectDetail(
     selectedProject ? Number(selectedProject.projectId) : null,
   );
   const planUrl = selectedProjectDetail?.planUrl ?? null;
+
+  const { data: teamMembersData } = useQuery({
+    queryKey: ['project-members', selectedProject?.projectId],
+    queryFn: () => getProjectMembers(Number(selectedProject!.projectId)),
+    enabled: selectedProject !== null,
+  });
+
+  const teamRecruitments = toTeamRecruitments(selectedProject?.recruitments ?? [], teamMembersData);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     ...managedProjectsInfiniteQueryOptions({
@@ -406,7 +423,12 @@ const ProjectsPage = () => {
 
       <RadixDialog.Root
         open={selectedProject !== null}
-        onOpenChange={(open) => !open && setSelectedProject(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTeamPanelOpen(false);
+            setSelectedProject(null);
+          }
+        }}
       >
         <RadixDialog.Portal>
           <RadixDialog.Overlay asChild>
@@ -449,9 +471,15 @@ const ProjectsPage = () => {
                         to: '/demo-day/project-settings/projects/$projectId',
                         params: { projectId: selectedProject.projectId },
                       }),
+                    () => setTeamPanelOpen(true),
                   )}
                 />
               </div>
+              <TeamCompositionPanel
+                open={teamPanelOpen}
+                onOpenChange={setTeamPanelOpen}
+                recruitments={teamRecruitments}
+              />
             </RadixDialog.Content>
           )}
         </RadixDialog.Portal>
