@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useBlocker } from '@tanstack/react-router';
 import { Button, Dialog, PageHeader, StepNavigation } from '@umc-product/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { myInfoQueryOptions, useProjectRegisterAccess, useSessionStore } from '@/entities/session';
 import {
@@ -16,6 +16,7 @@ import {
   type ProjectDraft,
   QuestionStep,
   RecruitInfoStep,
+  useEditProject,
   useMyDraftProject,
   usePmCandidates,
   useSaveProject,
@@ -48,7 +49,8 @@ const TOAST_MESSAGE = {
 const PE_PLATFORM_LABEL: Record<PePlatform, string> = { WEB: 'Web', MOBILE: 'Mobile' };
 
 type ProjectRegisterPageProps = {
-  onComplete: () => void; // 등록한 뒤 목록으로
+  onComplete: () => void;
+  projectId?: number; // 수정 모드: 기존 프로젝트 ID
 };
 
 // 피그마 프로젝트 등록: 1 기본 정보 → 2 모집 정보 → 3 지원 문항
@@ -56,13 +58,15 @@ type ProjectRegisterPageProps = {
 // 단계 번호: 1 기본 정보 · 2 모집 정보 · 3 지원 문항
 const RECRUIT_STEP = 2;
 
-const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
+const ProjectRegisterPage = ({ onComplete, projectId }: ProjectRegisterPageProps) => {
   const toast = useAppToast();
   const access = useProjectRegisterAccess();
   const { role, gisuId, serverChapterId } = useSessionStore((state) => state.session);
   const { data: myInfo } = useQuery(myInfoQueryOptions);
   const { hasDraft, loadDraft } = useMyDraftProject(gisuId);
   const { mutateAsync: saveProject } = useSaveProject();
+  const isEditMode = projectId !== undefined;
+  const { editData, isPending: isEditLoading } = useEditProject(isEditMode ? projectId : null);
 
   const isAdmin = access === 'ADMIN';
   // 지부장은 본인 지부 PM만 고를 수 있음
@@ -82,6 +86,21 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
   const [draftSaving, setDraftSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resumeAnswered, setResumeAnswered] = useState(false);
+
+  const editInitialized = useRef(false);
+
+  // 수정 모드: 기존 프로젝트 데이터 로드 후 draft · serverState 초기화 (최초 1회)
+  useEffect(() => {
+    if (!editData || editInitialized.current) return;
+    editInitialized.current = true;
+    serverState.current = {
+      ...createServerProjectState(),
+      projectId: editData.projectId,
+      mainPmId: editData.mainPmId,
+      coPmId: editData.coPmId,
+    };
+    setDraft(editData.draft);
+  }, [editData]);
 
   const updateDraft = (patch: Partial<ProjectDraft>) => {
     setDraft((prev) => ({ ...prev, ...patch }));
@@ -176,22 +195,22 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
       return;
     }
     setSubmitting(true);
-    const submitted = await save(true);
+    // 수정 모드: 이미 제출된 프로젝트이므로 업데이트만 (재제출 금지)
+    const submitted = await save(!isEditMode);
     setSubmitting(false);
     if (!submitted) return;
-    toast.show(TOAST_MESSAGE.registered);
-    // 이동 차단이 풀린 뒤에 목록으로 이동
+    toast.show(isEditMode ? '프로젝트가 수정되었어요' : TOAST_MESSAGE.registered);
     window.setTimeout(onComplete, 0);
   };
 
-  const busy = draftSaving || submitting;
+  const busy = draftSaving || submitting || isEditLoading;
 
   return (
     <main className="flex flex-col items-start gap-8 px-8 pt-12 pb-20">
       <PageHeader
         className="w-full max-w-[1158px]"
         breadcrumbs={BREADCRUMBS}
-        title="프로젝트 등록"
+        title={isEditMode ? '프로젝트 수정' : '프로젝트 등록'}
         description="내 프로젝트에 대한 정보를 등록하고 모집 폼을 작성해요."
       />
       <div className="flex w-full max-w-[1158px] flex-col gap-8">
@@ -280,7 +299,7 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
                   disabled={draftSaving}
                   onClick={() => void handleSubmit()}
                 >
-                  프로젝트 등록하기
+                  {isEditMode ? '수정 완료' : '프로젝트 등록하기'}
                 </Button>
               )}
             </div>
@@ -288,10 +307,10 @@ const ProjectRegisterPage = ({ onComplete }: ProjectRegisterPageProps) => {
         </div>
       </div>
 
-      {/* 피그마: 임시 저장된 프로젝트가 있으면 처음 들어올 때 이어서 쓸지 물어봄 */}
+      {/* 수정 모드가 아닐 때만: 임시 저장된 프로젝트가 있으면 처음 들어올 때 이어서 쓸지 물어봄 */}
       <Dialog
         className="dialog-flat"
-        open={hasDraft && !resumeAnswered}
+        open={!isEditMode && hasDraft && !resumeAnswered}
         onOpenChange={(open) => !open && setResumeAnswered(true)}
         title="임시 저장된 프로젝트를 이어서 작성할까요?"
         description="이미 작성 중이던 프로젝트가 있어요."

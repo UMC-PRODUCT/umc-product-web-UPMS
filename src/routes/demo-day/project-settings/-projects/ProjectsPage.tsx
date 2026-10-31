@@ -1,35 +1,24 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { AddIcon, UsersPictogram, WarningTriangleIcon } from '@umc-product/icons';
-import { Button, Dialog, Dimmed, PageHeader, SegmentedControl } from '@umc-product/react';
-import { Dialog as RadixDialog } from 'radix-ui';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { AddIcon, WarningTriangleIcon } from '@umc-product/icons';
+import { Button, Dialog, PageHeader, SegmentedControl } from '@umc-product/react';
+import { useEffect, useRef, useState } from 'react';
 
 import { useChapters } from '@/entities/chapter';
 import { getApplicationsView, type Role, useSessionStore, type View } from '@/entities/session';
-import { useProjectDetail } from '@/features/applications';
 import {
   getCurrentMatchingStep,
   toScheduleByTrack,
   useMatchingRounds,
 } from '@/features/matching-schedule';
-import {
-  getProjectMembers,
-  TeamCompositionPanel,
-  toTeamRecruitments,
-} from '@/features/project-list';
-import {
-  type ManagedProject,
-  ProjectManagementCard,
-  type RecruitPart,
-} from '@/features/project-management';
+import { type ManagedProject, ProjectManagementCard } from '@/features/project-management';
 import { deleteProject } from '@/features/project-management/api/deleteProject';
 import { managedProjectsInfiniteQueryOptions } from '@/features/project-management/api/managedProjectsQuery';
 import { cn } from '@/shared/lib/cn';
-import ProjectCard from '@/widgets/card/projectCard';
 import { useAppToast } from '@/widgets/toast';
 
 import EmptyDocumentIcon from './assets/empty-document.svg?react';
+import ProjectCardDialog from './ProjectCardDialog';
 
 const BREADCRUMBS = [
   { label: '데모데이 매칭', href: '/demo-day' },
@@ -37,118 +26,6 @@ const BREADCRUMBS = [
   { label: '프로젝트 관리' },
 ];
 
-const PART_LABEL: Record<RecruitPart, string> = {
-  DESIGN: 'Design',
-  WEB_PE: 'Web PE',
-  MOBILE_PE: 'Mobile PE',
-};
-
-// 프로젝트 카드 팝업 하단 버튼 반환 함수
-const getProjectDetailActions = (
-  role: Role,
-  view: View,
-  isApplicationPeriod: boolean,
-  isMatchingPeriod: boolean,
-  planUrl: string | null,
-  onEditProject: () => void,
-  onTeamClick: () => void,
-): ReactNode => {
-  const usersButton = (
-    <Button
-      variant="weak"
-      color="neutral"
-      size="md"
-      icon={<UsersPictogram size={30} color="var(--color-icon-subtle)" />}
-      aria-label="팀원 현황"
-      onClick={onTeamClick}
-    />
-  );
-
-  const planButton = (
-    <Button
-      variant="weak"
-      size="md"
-      className="flex-1"
-      disabled={!planUrl}
-      onClick={() => planUrl && window.open(planUrl, '_blank')}
-    >
-      기획 보기
-    </Button>
-  );
-
-  const recruitButton = (
-    <Button size="md" className="flex-1">
-      모집 문항 보기
-    </Button>
-  );
-
-  const recruitButtonDisabled = (
-    <Button size="md" className="flex-1" disabled>
-      모집 문항 보기
-    </Button>
-  );
-
-  const editButton = (
-    <Button size="md" className="flex-1" onClick={onEditProject}>
-      프로젝트 수정하기
-    </Button>
-  );
-
-  // 지원기간: PM 챌린저 + 어드민 모두 모집 문항 보기
-  if (isApplicationPeriod) {
-    return (
-      <>
-        {usersButton}
-        {planButton}
-        {recruitButton}
-      </>
-    );
-  }
-
-  // PM 챌린저: 지원기간 전 / 매칭기간 모두 프로젝트 수정하기
-  if (view === 'PM_CHALLENGER') {
-    return (
-      <>
-        {usersButton}
-        {planButton}
-        {editButton}
-      </>
-    );
-  }
-
-  // 매칭기간 (어드민): 모집 문항 보기 비활성화
-  if (isMatchingPeriod) {
-    return (
-      <>
-        {usersButton}
-        {planButton}
-        {recruitButtonDisabled}
-      </>
-    );
-  }
-
-  // 지원기간 전 - 타 지부장(CHAPTER_ADMIN): 모집 문항 보기
-  if (role === 'CHAPTER_ADMIN') {
-    return (
-      <>
-        {usersButton}
-        {planButton}
-        {recruitButton}
-      </>
-    );
-  }
-
-  // 지원기간 전 - SUPER_ADMIN, HQ_LEAD, HQ_ADMIN: 프로젝트 수정하기
-  return (
-    <>
-      {usersButton}
-      {planButton}
-      {editButton}
-    </>
-  );
-};
-
-// 프로젝트 관리 워딩 반환 함수
 const getDescription = (role: Role, view: View): string => {
   if (view === 'PM_CHALLENGER') {
     return '내 프로젝트를 등록하고 수정하거나, 매칭 현황을 확인할 수 있어요. 팀 매칭 진행 중에는 프로젝트를 수정할 수 없어요.';
@@ -159,11 +36,9 @@ const getDescription = (role: Role, view: View): string => {
   if (role === 'CHAPTER_ADMIN') {
     return '내 지부의 프로젝트 정보를 확인하고 수정할 수 있어요. 팀 매칭 진행 중에는 프로젝트를 수정할 수 없어요.';
   }
-  // SUPER_ADMIN, HQ_LEAD
   return '전체 지부의 프로젝트 정보를 확인하고 수정할 수 있어요. 팀 매칭 진행 중에는 프로젝트를 수정할 수 없어요.';
 };
 
-// 프로젝트 없을 시
 const EmptyState = ({
   showRegisterButton,
   onRegister,
@@ -223,21 +98,6 @@ const ProjectsPage = () => {
   const resolvedView = getApplicationsView(role, view);
   const isPmChallenger = resolvedView === 'PM_CHALLENGER';
   const navigate = useNavigate();
-
-  const [teamPanelOpen, setTeamPanelOpen] = useState(false);
-
-  const { data: selectedProjectDetail } = useProjectDetail(
-    selectedProject ? Number(selectedProject.projectId) : null,
-  );
-  const planUrl = selectedProjectDetail?.planUrl ?? null;
-
-  const { data: teamMembersData } = useQuery({
-    queryKey: ['project-members', selectedProject?.projectId],
-    queryFn: () => getProjectMembers(Number(selectedProject!.projectId)),
-    enabled: selectedProject !== null,
-  });
-
-  const teamRecruitments = toTeamRecruitments(selectedProject?.recruitments ?? [], teamMembersData);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     ...managedProjectsInfiniteQueryOptions({
@@ -419,69 +279,14 @@ const ProjectsPage = () => {
         <div ref={sentinelRef} className="h-1" />
       </div>
 
-      <RadixDialog.Root
-        open={selectedProject !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setTeamPanelOpen(false);
-            setSelectedProject(null);
-          }
-        }}
-      >
-        <RadixDialog.Portal>
-          <RadixDialog.Overlay asChild>
-            <Dimmed />
-          </RadixDialog.Overlay>
-          {selectedProject && (
-            <RadixDialog.Content
-              aria-describedby={undefined}
-              onOpenAutoFocus={(event) => {
-                event.preventDefault();
-                (event.currentTarget as HTMLElement).focus();
-              }}
-              className="fixed top-1/2 left-1/2 z-(--umc-z-dimmed) -translate-x-1/2 -translate-y-1/2 outline-none"
-            >
-              <div className="relative">
-                <RadixDialog.Title className="sr-only">
-                  {selectedProject.projectName}
-                </RadixDialog.Title>
-                <ProjectCard
-                  projectName={selectedProject.projectName}
-                  logoUrl={selectedProject.logoUrl}
-                  thumbnailUrl={selectedProject.thumbnailUrl}
-                  pmName={selectedProject.pmName}
-                  schoolName={selectedProject.schoolName}
-                  description={selectedProject.description}
-                  recruitments={selectedProject.recruitments.map((r) => ({
-                    label: PART_LABEL[r.part],
-                    applied: r.applied,
-                    capacity: r.capacity,
-                    status: r.status,
-                  }))}
-                  actions={getProjectDetailActions(
-                    role,
-                    resolvedView,
-                    isApplicationPeriod,
-                    isMatchingPeriod,
-                    planUrl,
-                    () =>
-                      navigate({
-                        to: '/demo-day/project-settings/projects/$projectId',
-                        params: { projectId: selectedProject.projectId },
-                      }),
-                    () => setTeamPanelOpen(true),
-                  )}
-                />
-              </div>
-              <TeamCompositionPanel
-                open={teamPanelOpen}
-                onOpenChange={setTeamPanelOpen}
-                recruitments={teamRecruitments}
-              />
-            </RadixDialog.Content>
-          )}
-        </RadixDialog.Portal>
-      </RadixDialog.Root>
+      <ProjectCardDialog
+        project={selectedProject}
+        role={role}
+        view={resolvedView}
+        isApplicationPeriod={isApplicationPeriod}
+        isMatchingPeriod={isMatchingPeriod}
+        onClose={() => setSelectedProject(null)}
+      />
 
       <Dialog
         open={deleteTarget !== null}
